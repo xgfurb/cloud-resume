@@ -1,0 +1,582 @@
+/*
+  ============================================================
+  STYLE.CSS — Cloud Resume: Chris Zuck
+  ============================================================
+
+  CSS (Cascading Style Sheets) controls how HTML elements look.
+  You target elements using "selectors" and then define rules
+  inside curly braces { }. Rules are key: value pairs.
+
+  "Cascading" means styles flow downward — more specific rules
+  override less specific ones. This matters when multiple rules
+  target the same element.
+*/
+
+
+/* ============================================================
+   CSS CUSTOM PROPERTIES (Variables)
+   ============================================================
+   Defined on :root (the <html> element), variables let you
+   store values once and reuse them everywhere. Change --accent
+   here and every place that uses it updates automatically.
+   Syntax to define: --name: value;
+   Syntax to use:    color: var(--name);
+*/
+:root {
+  --bg:        #0d0f12;   /* page background — very dark near-black */
+  --surface:   #13161b;   /* slightly lighter surface for cards */
+  --border:    #1e2229;   /* subtle border color */
+  --accent:    #4af0c4;   /* teal/mint — primary accent color */
+  --accent-dim:#1e6b57;   /* darker teal for subtle backgrounds */
+  --text:      #e2e8f0;   /* main body text — off-white */
+  --muted:     #64748b;   /* secondary text — gray */
+  --heading:   #f8fafc;   /* bright white for headings */
+}
+
+
+/* ============================================================
+   CSS RESET
+   ============================================================
+   Browsers have their own default styles (margins, padding,
+   box sizing). A reset zeroes these out so you start clean
+   and consistent across Chrome, Firefox, Safari, etc.
+
+   *  = universal selector — targets every single element
+   ::before and ::after are pseudo-elements (explained below)
+*/
+*, *::before, *::after {
+  box-sizing: border-box; /* makes width/height include padding and border,
+                             not add to it — much more intuitive to work with */
+  margin: 0;              /* remove default margins */
+  padding: 0;             /* remove default padding */
+}
+
+html {
+  scroll-behavior: smooth; /* animates anchor link jumps instead of instant jump */
+}
+
+
+/* ============================================================
+   BODY
+   ============================================================
+   The body selector targets the <body> element — the root
+   of all visible content.
+*/
+body {
+  background: var(--bg);          /* dark background */
+  color: var(--text);             /* default text color for all children */
+  font-family: 'JetBrains Mono', monospace; /* monospace font from Google Fonts */
+  font-size: 15px;                /* base font size — other sizes are relative to this */
+  line-height: 1.8;               /* spacing between lines (1.7 = 170% of font size) */
+  min-height: 100vh;              /* vh = viewport height. 100vh = full screen height */
+}
+
+
+/* ============================================================
+   PSEUDO-ELEMENT: ::before
+   ============================================================
+   ::before and ::after create a virtual element that doesn't
+   exist in your HTML but can be styled. Here we use it to
+   overlay a subtle noise texture on top of the background
+   without adding any HTML element.
+
+   content: '' is required — pseudo-elements won't render
+   without it, even if empty.
+*/
+body::before {
+  content: '';
+  position: fixed;    /* stays in place even when user scrolls */
+  inset: 0;           /* shorthand for top:0, right:0, bottom:0, left:0 */
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+  /* ↑ inline SVG encoded as a URL — generates a film grain noise texture */
+  pointer-events: none; /* lets clicks pass through — overlay isn't interactive */
+  z-index: 0;           /* z-index controls stacking order. 0 = behind content */
+  opacity: 0.4;         /* 40% opaque — subtle effect */
+}
+
+
+/* ============================================================
+   PAGE WRAPPER
+   ============================================================
+   .page is a class selector — targets any element with
+   class="page". The dot prefix means "class".
+*/
+.page {
+  position: relative; /* needed so child z-index values work correctly */
+  z-index: 1;         /* sits above the ::before noise overlay */
+  max-width: 860px;   /* caps width on large screens — wide text is hard to read */
+  margin: 0 auto;     /* auto left/right margins = horizontally centered */
+  padding: 60px 40px; /* 60px top/bottom, 40px left/right breathing room */
+}
+
+
+/* ============================================================
+   HEADER
+   ============================================================
+   CSS Grid turns the header into a two-column layout:
+   name on the left, contact info on the right.
+*/
+header {
+  display: grid;                        /* activate CSS Grid */
+  grid-template-columns: 1fr auto;      /* 1fr = takes all remaining space
+                                           auto = only as wide as its content */
+  align-items: end;                     /* align children to the bottom of the row */
+  gap: 24px;                            /* space between grid columns/rows */
+  padding-bottom: 40px;                 /* space before the border line */
+  border-bottom: 1px solid var(--border); /* thin separator line */
+  margin-bottom: 48px;                  /* space between header and first section */
+  animation: fadeUp 0.6s ease both;    /* plays the fadeUp animation on load */
+}
+
+
+/* ============================================================
+   TYPOGRAPHY: NAME
+   ============================================================
+   clamp() is a responsive sizing function:
+   clamp(min, preferred, max)
+   Font scales with viewport width but never below 2.4rem
+   or above 3.8rem.
+*/
+.name {
+  font-family: 'Syne', sans-serif; /* different font from body — display font */
+  font-size: clamp(2.4rem, 6vw, 3.8rem); /* vw = viewport width units */
+  font-weight: 800;                /* extra bold */
+  color: var(--heading);
+  letter-spacing: -0.03em;        /* tighten letter spacing — looks better large */
+  line-height: 1;                  /* no extra line spacing for the name */
+}
+
+/* targets the <span> inside .name — colors "Zuck" with the accent color */
+.name span {
+  color: var(--accent);
+}
+
+.title {
+  font-family: 'Syne', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;   /* wide letter spacing — uppercase labels look better spaced out */
+  text-transform: uppercase; /* CSS transforms text to caps without changing the HTML */
+  color: var(--accent);
+  margin-top: 10px;
+}
+
+
+/* ============================================================
+   CONTACT BLOCK
+   ============================================================
+*/
+.contact {
+  text-align: right; /* right-aligns all text inside */
+  font-size: 0.78rem;
+  color: var(--muted);
+  line-height: 2;    /* generous line height — each line of contact info has space */
+}
+
+/* targets <a> tags inside .contact */
+.contact a {
+  color: var(--muted);
+  text-decoration: none; /* removes default underline from links */
+  transition: color 0.2s; /* animates the color change over 0.2 seconds */
+}
+
+/* :hover is a pseudo-class — applies when the user's mouse is over the element */
+.contact a:hover {
+  color: var(--accent);
+}
+
+
+/* ============================================================
+   VISITOR COUNTER BADGE
+   ============================================================
+   Flexbox is used here — simpler than Grid for single-row
+   alignment. display: flex makes children sit side by side.
+*/
+.counter-badge {
+  display: inline-flex;       /* flex but only as wide as its content */
+  align-items: center;        /* vertically centers the dot and text */
+  gap: 8px;                   /* space between dot and text */
+  margin-top: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;         /* rounds the corners */
+  padding: 4px 10px;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+/* the animated green dot */
+.counter-badge .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;         /* 50% = perfect circle */
+  background: var(--accent);
+  animation: pulse 2s infinite; /* pulse animation, loops forever */
+}
+
+/* targets the span with id="visit-count" inside the badge */
+#visit-count {
+  color: var(--accent);
+  font-weight: 500;
+}
+
+
+/* ============================================================
+   SECTIONS
+   ============================================================
+   nth-child selectors target sections by their position in
+   the DOM. animation-delay staggers the load animations so
+   each section fades in slightly after the previous one.
+*/
+section {
+  margin-bottom: 48px;
+  animation: fadeUp 0.6s ease both;
+}
+
+section:nth-child(2) { animation-delay: 0.05s; }
+section:nth-child(3) { animation-delay: 0.10s; }
+section:nth-child(4) { animation-delay: 0.15s; }
+section:nth-child(5) { animation-delay: 0.20s; }
+section:nth-child(6) { animation-delay: 0.25s; }
+
+
+/* ============================================================
+   SECTION LABELS
+   ============================================================
+   The line extending to the right of each label is created
+   with ::after — a pseudo-element that draws a horizontal
+   line using flex and flex: 1 (take all remaining space).
+*/
+.section-label {
+  font-family: 'Syne', sans-serif;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 20px;
+  display: flex;        /* makes label and line sit side by side */
+  align-items: center;  /* vertically centers label with the line */
+  gap: 12px;
+}
+
+.section-label::after {
+  content: '';          /* required for pseudo-elements to render */
+  flex: 1;              /* grows to fill all remaining horizontal space */
+  height: 1px;
+  background: var(--border);
+}
+
+
+/* ============================================================
+   SUMMARY
+   ============================================================
+*/
+.summary p {
+  color: var(--text);
+  font-size: 0.88rem;
+  line-height: 1.8;
+  max-width: 640px; /* narrower than the page — long lines are hard to read */
+}
+
+
+/* ============================================================
+   EXPERIENCE / JOB ENTRIES
+   ============================================================
+   Grid layout: job title left, date right.
+   grid-column: 1 / -1 means "span from column 1 to the last
+   column" — used to make the description span full width.
+*/
+.job {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px 24px;        /* row-gap column-gap shorthand */
+  padding: 20px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.job:last-child {
+  border-bottom: none;  /* removes border from the last job entry */
+}
+
+.job-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--heading);
+}
+
+.job-company {
+  font-size: 0.8rem;
+  color: var(--accent);
+  margin-top: 2px;
+}
+
+.job-date {
+  font-size: 0.75rem;
+  color: var(--muted);
+  text-align: right;
+  white-space: nowrap;  /* prevents date from wrapping to a new line */
+}
+
+.job-desc {
+  grid-column: 1 / -1; /* span full width of the grid */
+  margin-top: 8px;
+}
+
+.job-desc ul {
+  list-style: none; /* removes default bullet points */
+  padding: 0;
+}
+
+.job-desc li {
+  font-size: 0.82rem;
+  color: var(--text);
+  padding: 3px 0 3px 16px; /* left padding creates space for our custom bullet */
+  position: relative;       /* required for absolute-positioned ::before child */
+}
+
+/* custom bullet using ::before pseudo-element */
+.job-desc li::before {
+  content: '▸';          /* triangle character as bullet */
+  position: absolute;    /* positioned relative to the li */
+  left: 0;               /* pinned to the left edge of the li */
+  color: var(--accent-dim);
+  font-size: 0.7rem;
+  top: 5px;
+}
+
+
+/* ============================================================
+   SKILLS GRID
+   ============================================================
+   auto-fill with minmax creates a responsive grid that adds
+   columns when there's space and wraps when there isn't.
+   minmax(200px, 1fr) = each column is at least 200px wide,
+   grows to fill available space equally.
+*/
+.skills-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.skill-group h3 {
+  font-family: 'Syne', sans-serif;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+
+.skill-tags {
+  display: flex;
+  flex-wrap: wrap; /* tags wrap to next line if they don't fit */
+  gap: 6px;
+}
+
+.tag {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 3px 8px;
+  font-size: 0.72rem;
+  color: var(--text);
+  transition: border-color 0.2s, color 0.2s; /* animate both properties on hover */
+}
+
+.tag:hover {
+  border-color: var(--accent-dim);
+  color: var(--accent);
+}
+
+
+/* ============================================================
+   CERTIFICATIONS
+   ============================================================
+*/
+.cert-list {
+  display: flex;
+  flex-direction: column; /* stacks children vertically (default flex is horizontal) */
+  gap: 12px;
+}
+
+.cert {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 14px 18px;
+  transition: border-color 0.2s;
+}
+
+.cert:hover {
+  border-color: var(--accent-dim);
+}
+
+.cert-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 4px;
+  background: var(--accent-dim);
+  display: flex;
+  align-items: center;
+  justify-content: center; /* centers content both horizontally and vertically */
+  font-size: 0.8rem;
+  color: var(--accent);
+  flex-shrink: 0;          /* prevents icon from shrinking if space is tight */
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+}
+
+.cert-name {
+  font-family: 'Syne', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--heading);
+}
+
+.cert-issuer {
+  font-size: 0.72rem;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+
+/* ============================================================
+   EDUCATION
+   ============================================================
+*/
+.edu {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 24px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.edu:last-child {
+  border-bottom: none;
+}
+
+.edu-degree {
+  font-family: 'Syne', sans-serif;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--heading);
+}
+
+.edu-school {
+  font-size: 0.78rem;
+  color: var(--accent);
+  margin-top: 2px;
+}
+
+.edu-date {
+  font-size: 0.75rem;
+  color: var(--muted);
+  text-align: right;
+}
+
+
+/* ============================================================
+   FOOTER
+   ============================================================
+   space-between pushes the two children to opposite ends
+   of the footer.
+*/
+footer {
+  margin-top: 60px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+  font-size: 0.7rem;
+  color: var(--muted);
+  display: flex;
+  justify-content: space-between; /* left child left, right child right */
+  align-items: center;
+}
+
+footer a {
+  color: var(--muted);
+  text-decoration: none;
+}
+
+footer a:hover {
+  color: var(--accent);
+}
+
+
+/* ============================================================
+   ANIMATIONS
+   ============================================================
+   @keyframes defines a reusable animation sequence.
+   "from" = starting state, "to" = ending state.
+   The animation property on elements references these by name.
+
+   fadeUp: elements start invisible and 16px below their
+   final position, then fade in and slide up.
+
+   pulse: the counter dot fades in and out to simulate
+   a live/active indicator.
+*/
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px); /* moves element down 16px */
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);   /* back to normal position */
+  }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }   /* fully visible at start and end */
+  50%       { opacity: 0.3; } /* fades to 30% at midpoint */
+}
+
+
+/* ============================================================
+   RESPONSIVE DESIGN — MEDIA QUERIES
+   ============================================================
+   @media rules apply styles only when a condition is met.
+   max-width: 600px means "apply these styles when the screen
+   is 600px wide or narrower" — i.e. mobile devices.
+
+   We switch multi-column grid layouts to single column,
+   and flip right-aligned text to left-aligned so it
+   doesn't get cut off on narrow screens.
+*/
+@media (max-width: 600px) {
+  .page {
+    padding: 32px 20px; /* less padding on small screens */
+  }
+
+  header {
+    grid-template-columns: 1fr; /* single column — contact goes below name */
+  }
+
+  .contact {
+    text-align: left; /* left-align on mobile since it's no longer in the right column */
+  }
+
+  .job {
+    grid-template-columns: 1fr; /* date goes below title instead of beside it */
+  }
+
+  .job-date {
+    text-align: left;
+  }
+
+  .edu {
+    grid-template-columns: 1fr;
+  }
+
+  .edu-date {
+    text-align: left;
+  }
+}

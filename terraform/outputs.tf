@@ -44,3 +44,11 @@ output "site_url" {
   description = "Live site URL"
   value       = "https://${var.domain_name}"
 }
+
+# API Gateway endpoint — this is the URL your frontend
+# JavaScript calls to get/increment the visitor count.
+# Drop this into index.html to wire up the counter.
+output "api_url" {
+  description = "Visitor counter API endpoint"
+  value       = "${aws_apigatewayv2_api.counter_api.api_endpoint}/count"
+}

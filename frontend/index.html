@@ -341,7 +341,9 @@
         <script>
             async function fetchVisitorCount() {
                 try {
-                    const response = await fetch("YOUR_API_GATEWAY_URL_HERE");
+                    const response = await fetch(
+                        "https://rgmtlia3mi.execute-api.us-east-1.amazonaws.com/count",
+                    );
                     const data = await response.json();
                     document.getElementById("visit-count").textContent =
                         data.count.toLocaleString();

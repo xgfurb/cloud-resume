@@ -52,3 +52,10 @@ output "api_url" {
   description = "Visitor counter API endpoint"
   value       = "${aws_apigatewayv2_api.counter_api.api_endpoint}/count"
 }
+
+# The IAM role ARN that GitHub Actions assumes via OIDC.
+# This value goes into your workflow YAML files.
+output "github_actions_role_arn" {
+  description = "IAM role ARN for GitHub Actions OIDC"
+  value       = aws_iam_role.github_actions.arn
+}

@@ -1,0 +1,60 @@
+# ============================================================
+# FRONTEND DEPLOYMENT WORKFLOW
+# ============================================================
+# Triggers on push to main when files in frontend/ change.
+# Syncs HTML/CSS to S3 and invalidates CloudFront cache.
+#
+# Authentication: uses OIDC to assume an IAM role — no stored
+# AWS credentials in GitHub Secrets.
+# ============================================================
+
+name: Deploy Frontend
+
+# Only run when frontend files change on main branch
+on:
+  push:
+    branches: [main]
+    paths:
+      - "frontend/**"
+
+# OIDC requires these permissions to request the JWT token
+# from GitHub's OIDC provider and pass it to AWS.
+permissions:
+  id-token: write    # needed to request the OIDC JWT
+  contents: read     # needed to checkout the repo
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Check out the repo so we have access to frontend/ files
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Step 2: Authenticate with AWS using OIDC
+      # This action exchanges the GitHub OIDC token for temporary
+      # AWS credentials (valid ~1 hour, auto-expire).
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: us-east-1
+
+      # Step 3: Sync frontend files to S3
+      # --delete removes files from S3 that no longer exist locally
+      # This keeps S3 as an exact mirror of your frontend/ folder.
+      - name: Sync to S3
+        run: aws s3 sync frontend/ s3://${{ vars.S3_BUCKET_NAME }} --delete
+
+      # Step 4: Invalidate CloudFront cache
+      # CloudFront caches files at edge locations. After uploading
+      # new files to S3, we tell CloudFront to drop its cache so
+      # visitors get the new version immediately instead of waiting
+      # for the cache TTL to expire.
+      # "/*" invalidates all paths — fine for a small site.
+      - name: Invalidate CloudFront cache
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id ${{ vars.CLOUDFRONT_DISTRIBUTION_ID }} \
+            --paths "/*"

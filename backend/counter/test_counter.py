@@ -49,8 +49,13 @@ def aws_environment():
     Nothing hits real AWS.
     """
     with mock_aws():
-        # Set the environment variable the Lambda function reads
+        # Set the environment variables the Lambda function reads.
+        # AWS_DEFAULT_REGION is needed because the Lambda function
+        # initializes boto3 at module level without specifying a
+        # region. On AWS, Lambda sets this automatically. In the
+        # test environment, we have to set it ourselves.
         os.environ["TABLE_NAME"] = "cloud-resume-counter"
+        os.environ["AWS_DEFAULT_REGION"] = "us-east-1"
 
         # Create the mock DynamoDB table (same schema as Terraform)
         dynamodb = boto3.resource("dynamodb", region_name="us-east-1")

@@ -15,6 +15,8 @@ as a single operation. Even if two visitors hit the site at the
 exact same millisecond, each request gets its own increment —
 no race condition, no lost counts. This is handled by
 UpdateExpression with ADD, which is an atomic operation in DynamoDB.
+
+Test update.
 """
 
 import json

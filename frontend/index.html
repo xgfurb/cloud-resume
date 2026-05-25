@@ -11,6 +11,12 @@
             rel="stylesheet"
         />
         <link rel="stylesheet" href="style.css" />
+        <script>
+            (function () {
+                var t = localStorage.getItem('theme') || 'dark';
+                document.documentElement.setAttribute('data-theme', t);
+            })();
+        </script>
     </head>
     <body>
         <div class="page">
@@ -38,6 +44,10 @@
                         <span class="dot"></span>
                         <span>Visitors: <span id="visit-count">—</span></span>
                     </div>
+                    <button class="theme-toggle" id="theme-toggle" aria-label="Toggle color theme">
+                        <span class="theme-toggle-icon">◑</span>
+                        <span id="theme-label">LIGHT</span>
+                    </button>
                 </div>
             </header>
 
@@ -284,13 +294,15 @@
 
                     <ul class="cert-list">
                         <li class="cert">
-                            <span class="cert-icon">G</span>
-                            <div>
-                                <p class="cert-name">
-                                    Google Generative AI Leader
-                                </p>
-                                <p class="cert-issuer">Google &middot; 2025</p>
-                            </div>
+                            <a href="https://www.credly.com/badges/8775b778-a365-46c9-92ad-39febfa5ab5f/public_url" target="_blank" class="cert-link">
+                                <span class="cert-icon">G</span>
+                                <div>
+                                    <p class="cert-name">
+                                        Google Generative AI Leader
+                                    </p>
+                                    <p class="cert-issuer">Google &middot; 2025</p>
+                                </div>
+                            </a>
                         </li>
                         <li class="cert">
                             <span class="cert-icon">AZ</span>
@@ -331,7 +343,7 @@
             </main>
 
             <footer>
-                <p>Built with AWS &middot; Terraform &middot; GitHub Actions</p>
+                <p>Built with AWS &middot; Terraform &middot; GitHub Actions &middot; Claude Code</p>
                 <!-- <a href="https://github.com/xgfurb/cloud-resume" target="_blank"
                     >View source &nearr;</a
                 > -->
@@ -339,6 +351,25 @@
         </div>
 
         <script>
+            (function () {
+                var toggle = document.getElementById('theme-toggle');
+                var label  = document.getElementById('theme-label');
+
+                function applyTheme(theme) {
+                    document.documentElement.setAttribute('data-theme', theme);
+                    label.textContent = theme === 'dark' ? 'LIGHT' : 'DARK';
+                }
+
+                applyTheme(localStorage.getItem('theme') || 'dark');
+
+                toggle.addEventListener('click', function () {
+                    var current = document.documentElement.getAttribute('data-theme');
+                    var next = current === 'dark' ? 'light' : 'dark';
+                    localStorage.setItem('theme', next);
+                    applyTheme(next);
+                });
+            })();
+
             async function fetchVisitorCount() {
                 try {
                     const response = await fetch(

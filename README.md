@@ -10,7 +10,7 @@ A serverless resume website built as part of the [Cloud Resume Challenge](https:
 - **CI/CD:** GitHub Actions
 
 ## Architecture
-- Static site deployed to S3 on every push to `master`
+- Static site deployed to S3 on every push to `main`
 - Visitor counter API via Lambda + DynamoDB
 - CloudFront for HTTPS and custom domain
 

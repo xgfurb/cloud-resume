@@ -15,4 +15,4 @@ A serverless resume website built as part of the [Cloud Resume Challenge](https:
 - CloudFront for HTTPS and custom domain
 
 ## Status
-🚧 In progress
+🚧 Base project is complete. Improvements are ongoing

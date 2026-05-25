@@ -27,6 +27,18 @@ terraform {
 
   # minimum Terraform version required to use this config
   required_version = ">= 1.0"
+
+  # Remote state storage — keeps terraform.tfstate in S3
+  # so it survives machine swaps and enables team collaboration.
+  # The S3 bucket and DynamoDB lock table are created by the
+  # bootstrap config in terraform/bootstrap/.
+  backend "s3" {
+    bucket         = "czresume-terraform-state"
+    key            = "cloud-resume/terraform.tfstate"
+    region         = "us-east-1"
+    use_lockfile   = true
+    encrypt        = true
+  }
 }
 
 # The provider block configures the AWS plugin itself.

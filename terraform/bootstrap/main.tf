@@ -173,25 +173,17 @@ resource "aws_iam_policy" "dev" {
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
+      # ── S3: read + object operations (broad — needed for state access) ──
       {
-        Sid    = "S3"
+        Sid    = "S3ReadAndObjects"
         Effect = "Allow"
         Action = [
-          "s3:CreateBucket",
-          "s3:DeleteBucket",
           "s3:GetBucketLocation",
           "s3:GetBucketPolicy",
-          "s3:PutBucketPolicy",
-          "s3:DeleteBucketPolicy",
           "s3:GetBucketPublicAccessBlock",
-          "s3:PutBucketPublicAccessBlock",
           "s3:GetBucketVersioning",
-          "s3:PutBucketVersioning",
           "s3:GetBucketTagging",
-          "s3:PutBucketTagging",
-          "s3:DeleteBucketTagging",
           "s3:GetEncryptionConfiguration",
-          "s3:PutEncryptionConfiguration",
           "s3:GetBucketLogging",
           "s3:GetBucketCORS",
           "s3:GetBucketACL",
@@ -209,6 +201,42 @@ resource "aws_iam_policy" "dev" {
         ]
         Resource = "*"
       },
+      # ── S3: destructive/mutating bucket operations ──
+      {
+        Sid    = "S3Manage"
+        Effect = "Allow"
+        Action = [
+          "s3:CreateBucket",
+          "s3:DeleteBucket",
+          "s3:PutBucketPolicy",
+          "s3:DeleteBucketPolicy",
+          "s3:PutBucketPublicAccessBlock",
+          "s3:PutBucketVersioning",
+          "s3:PutBucketTagging",
+          "s3:DeleteBucketTagging",
+          "s3:PutEncryptionConfiguration"
+        ]
+        Resource = "*"
+      },
+      # ── Deny mutations on the Terraform state bucket ──
+      # Belt-and-suspenders: even if S3Manage allows *, the state bucket
+      # is explicitly protected. Deny always wins over Allow in IAM.
+      {
+        Sid    = "DenyStateBucketMutation"
+        Effect = "Deny"
+        Action = [
+          "s3:DeleteBucket",
+          "s3:PutBucketPolicy",
+          "s3:DeleteBucketPolicy",
+          "s3:PutBucketPublicAccessBlock",
+          "s3:PutBucketVersioning"
+        ]
+        Resource = [
+          "arn:aws:s3:::czresume-terraform-state",
+          "arn:aws:s3:::czresume-terraform-state/*"
+        ]
+      },
+      # ── Route53 (zone IDs not known at policy creation time) ──
       {
         Sid    = "Route53"
         Effect = "Allow"
@@ -226,6 +254,7 @@ resource "aws_iam_policy" "dev" {
         ]
         Resource = "*"
       },
+      # ── ACM (cert ARNs not known at policy creation time) ──
       {
         Sid    = "ACM"
         Effect = "Allow"
@@ -240,6 +269,7 @@ resource "aws_iam_policy" "dev" {
         ]
         Resource = "*"
       },
+      # ── CloudFront (distribution IDs not known at policy creation time) ──
       {
         Sid    = "CloudFront"
         Effect = "Allow"
@@ -263,6 +293,14 @@ resource "aws_iam_policy" "dev" {
         ]
         Resource = "*"
       },
+      # ── DynamoDB list (doesn't support resource-level permissions) ──
+      {
+        Sid      = "DynamoDBList"
+        Effect   = "Allow"
+        Action   = ["dynamodb:ListTables"]
+        Resource = "*"
+      },
+      # ── DynamoDB table operations scoped to project tables ──
       {
         Sid    = "DynamoDB"
         Effect = "Allow"
@@ -271,7 +309,6 @@ resource "aws_iam_policy" "dev" {
           "dynamodb:DeleteTable",
           "dynamodb:DescribeTable",
           "dynamodb:UpdateTable",
-          "dynamodb:ListTables",
           "dynamodb:ListTagsOfResource",
           "dynamodb:TagResource",
           "dynamodb:UntagResource",
@@ -282,8 +319,12 @@ resource "aws_iam_policy" "dev" {
           "dynamodb:DescribeContinuousBackups",
           "dynamodb:DescribeTimeToLive"
         ]
-        Resource = "*"
+        Resource = [
+          "arn:aws:dynamodb:us-east-1:481088928034:table/cloud-resume-*",
+          "arn:aws:dynamodb:us-east-1:481088928034:table/czresume-*"
+        ]
       },
+      # ── Lambda scoped to project functions ──
       {
         Sid    = "Lambda"
         Effect = "Allow"
@@ -301,8 +342,9 @@ resource "aws_iam_policy" "dev" {
           "lambda:UntagResource",
           "lambda:GetFunctionCodeSigningConfig"
         ]
-        Resource = "*"
+        Resource = "arn:aws:lambda:us-east-1:481088928034:function:cloud-resume-*"
       },
+      # ── API Gateway (API IDs not known at policy creation time) ──
       {
         Sid    = "APIGateway"
         Effect = "Allow"
@@ -315,6 +357,7 @@ resource "aws_iam_policy" "dev" {
         ]
         Resource = "*"
       },
+      # ── IAM roles and policies scoped to project prefix ──
       {
         Sid    = "IAMRolesAndPolicies"
         Effect = "Allow"
@@ -330,13 +373,39 @@ resource "aws_iam_policy" "dev" {
           "iam:DeleteRolePolicy",
           "iam:AttachRolePolicy",
           "iam:DetachRolePolicy",
-          "iam:PassRole",
           "iam:TagRole",
           "iam:UntagRole",
           "iam:ListRoleTags"
         ]
+        Resource = [
+          "arn:aws:iam::481088928034:role/cloud-resume-*",
+          "arn:aws:iam::481088928034:policy/cloud-resume-*"
+        ]
+      },
+      # ── PassRole scoped to project roles + specific services only ──
+      # Prevents privilege escalation via Lambda/API Gateway with arbitrary roles.
+      {
+        Sid      = "IAMPassRole"
+        Effect   = "Allow"
+        Action   = "iam:PassRole"
+        Resource = "arn:aws:iam::481088928034:role/cloud-resume-*"
+        Condition = {
+          StringEquals = {
+            "iam:PassedToService" = [
+              "lambda.amazonaws.com",
+              "apigateway.amazonaws.com"
+            ]
+          }
+        }
+      },
+      # ── OIDC list (doesn't support resource-level permissions) ──
+      {
+        Sid      = "IAMOIDCList"
+        Effect   = "Allow"
+        Action   = ["iam:ListOpenIDConnectProviders"]
         Resource = "*"
       },
+      # ── OIDC provider operations scoped to GitHub's provider ──
       {
         Sid    = "IAMOIDCProvider"
         Effect = "Allow"
@@ -347,12 +416,11 @@ resource "aws_iam_policy" "dev" {
           "iam:UpdateOpenIDConnectProviderThumbprint",
           "iam:AddClientIDToOpenIDConnectProvider",
           "iam:RemoveClientIDFromOpenIDConnectProvider",
-          "iam:ListOpenIDConnectProviders",
           "iam:TagOpenIDConnectProvider",
           "iam:UntagOpenIDConnectProvider",
           "iam:ListOpenIDConnectProviderTags"
         ]
-        Resource = "*"
+        Resource = "arn:aws:iam::481088928034:oidc-provider/token.actions.githubusercontent.com"
       }
     ]
   })

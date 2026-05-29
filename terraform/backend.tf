@@ -51,24 +51,24 @@ resource "aws_dynamodb_table" "visitor_counter" {
 # aws_dynamodb_table_item uses Terraform's DynamoDB JSON
 # format, which explicitly declares the type of each value:
 #   "S" = string, "N" = number (as a string — DynamoDB quirk)
-resource "aws_dynamodb_table_item" "initial_count" {
-  table_name = aws_dynamodb_table.visitor_counter.name
-  hash_key   = aws_dynamodb_table.visitor_counter.hash_key
-
-  item = <<ITEM
-{
-  "id": {"S": "visitors"},
-  "visit_count": {"N": "0"}
-}
-ITEM
-
-  # lifecycle ignore_changes prevents Terraform from resetting
-  # the counter back to 0 on every apply. Without this,
-  # terraform apply would overwrite the live count.
-  lifecycle {
-    ignore_changes = [item]
-  }
-}
+# resource "aws_dynamodb_table_item" "initial_count" {
+#   table_name = aws_dynamodb_table.visitor_counter.name
+#   hash_key   = aws_dynamodb_table.visitor_counter.hash_key
+# 
+#   item = <<ITEM
+# {
+#   "id": {"S": "visitors"},
+#   "visit_count": {"N": "0"}
+# }
+# ITEM
+# 
+#   # lifecycle ignore_changes prevents Terraform from resetting
+#   # the counter back to 0 on every apply. Without this,
+#   # terraform apply would overwrite the live count.
+#   lifecycle {
+#     ignore_changes = [item]
+#   }
+# }
 
 
 # ────────────────────────────────────────────────────────────

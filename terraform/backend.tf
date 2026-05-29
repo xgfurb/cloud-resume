@@ -37,7 +37,7 @@ resource "aws_dynamodb_table" "visitor_counter" {
   # don't need to be declared here, they're added at runtime.
   attribute {
     name = "id"
-    type = "S"    # S = String, N = Number, B = Binary
+    type = "S" # S = String, N = Number, B = Binary
   }
 
   tags = {
@@ -124,8 +124,8 @@ resource "aws_iam_role_policy" "lambda_dynamodb" {
         # DynamoDB permissions — scoped to the counter table only
         Effect = "Allow"
         Action = [
-          "dynamodb:GetItem",      # read the counter
-          "dynamodb:UpdateItem",   # increment the counter
+          "dynamodb:GetItem",    # read the counter
+          "dynamodb:UpdateItem", # increment the counter
         ]
         Resource = aws_dynamodb_table.visitor_counter.arn
       },
@@ -171,12 +171,12 @@ data "archive_file" "lambda_zip" {
 }
 
 resource "aws_lambda_function" "visitor_counter" {
-  filename         = data.archive_file.lambda_zip.output_path
-  function_name    = "cloud-resume-counter"
-  role             = aws_iam_role.lambda_role.arn
-  handler          = "lambda_function.handler"
-  runtime          = "python3.12"
-  timeout          = 10          # seconds — default is 3, which can be tight
+  filename      = data.archive_file.lambda_zip.output_path
+  function_name = "cloud-resume-counter"
+  role          = aws_iam_role.lambda_role.arn
+  handler       = "lambda_function.handler"
+  runtime       = "python3.12"
+  timeout       = 10 # seconds — default is 3, which can be tight
 
   # source_code_hash tells Terraform to redeploy the function
   # whenever the code changes. Without it, Terraform wouldn't
@@ -224,7 +224,7 @@ resource "aws_apigatewayv2_api" "counter_api" {
     ]
     allow_methods = ["GET", "POST"]
     allow_headers = ["content-type"]
-    max_age       = 3600    # browser caches CORS preflight for 1 hour
+    max_age       = 3600 # browser caches CORS preflight for 1 hour
   }
 
   tags = {
@@ -240,7 +240,7 @@ resource "aws_apigatewayv2_integration" "counter_integration" {
   api_id                 = aws_apigatewayv2_api.counter_api.id
   integration_type       = "AWS_PROXY"
   integration_uri        = aws_lambda_function.visitor_counter.invoke_arn
-  payload_format_version = "2.0"    # v2 format — simpler event structure
+  payload_format_version = "2.0" # v2 format — simpler event structure
 }
 
 # Route defines which HTTP path/method triggers the integration.
@@ -266,8 +266,8 @@ resource "aws_apigatewayv2_stage" "default" {
   # Throttling prevents abuse — limits how many requests
   # per second your API will accept.
   default_route_settings {
-    throttling_burst_limit = 10    # max concurrent requests
-    throttling_rate_limit  = 5     # sustained requests per second
+    throttling_burst_limit = 10 # max concurrent requests
+    throttling_rate_limit  = 5  # sustained requests per second
   }
 
   tags = {

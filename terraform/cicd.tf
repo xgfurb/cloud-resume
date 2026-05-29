@@ -206,9 +206,9 @@ resource "aws_iam_role_policy" "github_actions_terraform" {
         Resource = "*"
       },
       {
-        Sid    = "DynamoDBList"
-        Effect = "Allow"
-        Action = ["dynamodb:ListTables"]
+        Sid      = "DynamoDBList"
+        Effect   = "Allow"
+        Action   = ["dynamodb:ListTables"]
         Resource = "*"
       },
       {

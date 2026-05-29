@@ -18,10 +18,10 @@ terraform {
   # to download and from where (the HashiCorp registry)
   required_providers {
     aws = {
-      source  = "hashicorp/aws"   # official AWS provider
-      version = "~> 5.0"          # any 5.x version — the ~> means
-                                   # "compatible with 5.0, up to but
-                                   # not including 6.0"
+      source  = "hashicorp/aws" # official AWS provider
+      version = "~> 5.0"        # any 5.x version — the ~> means
+      # "compatible with 5.0, up to but
+      # not including 6.0"
     }
   }
 
@@ -33,11 +33,11 @@ terraform {
   # The S3 bucket and DynamoDB lock table are created by the
   # bootstrap config in terraform/bootstrap/.
   backend "s3" {
-    bucket         = "czresume-terraform-state"
-    key            = "cloud-resume/terraform.tfstate"
-    region         = "us-east-1"
-    use_lockfile   = true
-    encrypt        = true
+    bucket       = "czresume-terraform-state"
+    key          = "cloud-resume/terraform.tfstate"
+    region       = "us-east-1"
+    use_lockfile = true
+    encrypt      = true
   }
 }
 

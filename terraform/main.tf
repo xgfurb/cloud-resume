@@ -12,7 +12,7 @@
 #     to validate domain ownership
 # ============================================================
 
-
+#Test comment 
 # ────────────────────────────────────────────────────────────
 # S3 BUCKET
 # ────────────────────────────────────────────────────────────
@@ -43,10 +43,10 @@ resource "aws_s3_bucket" "site" {
 resource "aws_s3_bucket_public_access_block" "site" {
   bucket = aws_s3_bucket.site.id
 
-  block_public_acls       = true   # block public ACLs from being set
-  block_public_policy     = true   # block public bucket policies
-  ignore_public_acls      = true   # ignore any existing public ACLs
-  restrict_public_buckets = true   # restrict public bucket policies
+  block_public_acls       = true # block public ACLs from being set
+  block_public_policy     = true # block public bucket policies
+  ignore_public_acls      = true # ignore any existing public ACLs
+  restrict_public_buckets = true # restrict public bucket policies
 }
 
 
@@ -131,7 +131,7 @@ resource "aws_route53_record" "cert_validation" {
   zone_id = aws_route53_zone.main.zone_id
   name    = each.value.name
   type    = each.value.type
-  ttl     = 300          # 5 minutes — low TTL for validation records
+  ttl     = 300 # 5 minutes — low TTL for validation records
   records = [each.value.record]
 
   allow_overwrite = true # safe to overwrite if the record already exists
@@ -172,8 +172,8 @@ resource "aws_cloudfront_origin_access_control" "site" {
   name                              = "oac-${var.bucket_name}"
   description                       = "OAC for ${var.domain_name} S3 bucket"
   origin_access_control_origin_type = "s3"
-  signing_behavior                  = "always"    # always sign requests to S3
-  signing_protocol                  = "sigv4"     # use AWS SigV4 signing
+  signing_behavior                  = "always" # always sign requests to S3
+  signing_protocol                  = "sigv4"  # use AWS SigV4 signing
 }
 
 
@@ -193,7 +193,7 @@ resource "aws_cloudfront_origin_access_control" "site" {
 resource "aws_cloudfront_distribution" "site" {
   enabled             = true
   is_ipv6_enabled     = true
-  default_root_object = "index.html"    # serves index.html when someone visits the root URL
+  default_root_object = "index.html" # serves index.html when someone visits the root URL
   aliases             = [var.domain_name, "www.${var.domain_name}"]
   comment             = "CloudFront distribution for ${var.domain_name}"
 
@@ -207,9 +207,9 @@ resource "aws_cloudfront_distribution" "site" {
   # default_cache_behavior controls how CloudFront handles
   # requests that don't match any specific path patterns
   default_cache_behavior {
-    allowed_methods  = ["GET", "HEAD"]           # static site only needs read methods
-    cached_methods   = ["GET", "HEAD"]           # cache responses for these methods
-    target_origin_id = "s3-${var.bucket_name}"   # which origin to fetch from
+    allowed_methods  = ["GET", "HEAD"]         # static site only needs read methods
+    cached_methods   = ["GET", "HEAD"]         # cache responses for these methods
+    target_origin_id = "s3-${var.bucket_name}" # which origin to fetch from
 
     # forwarded_values controls what CloudFront passes through
     # to the origin. For a static site, we don't need query
@@ -221,11 +221,11 @@ resource "aws_cloudfront_distribution" "site" {
       }
     }
 
-    viewer_protocol_policy = "redirect-to-https"  # HTTP → HTTPS redirect
-    min_ttl                = 0                     # minimum cache time in seconds
-    default_ttl            = 3600                  # default cache: 1 hour
-    max_ttl                = 86400                 # maximum cache: 24 hours
-    compress               = true                  # enable gzip/brotli compression
+    viewer_protocol_policy = "redirect-to-https" # HTTP → HTTPS redirect
+    min_ttl                = 0                   # minimum cache time in seconds
+    default_ttl            = 3600                # default cache: 1 hour
+    max_ttl                = 86400               # maximum cache: 24 hours
+    compress               = true                # enable gzip/brotli compression
   }
 
   # price_class controls which edge locations CloudFront uses.
@@ -236,15 +236,15 @@ resource "aws_cloudfront_distribution" "site" {
   # restrictions — required block even if you're not restricting
   restrictions {
     geo_restriction {
-      restriction_type = "none"   # no geographic restrictions
+      restriction_type = "none" # no geographic restrictions
     }
   }
 
   # viewer_certificate configures HTTPS using your ACM cert
   viewer_certificate {
     acm_certificate_arn      = aws_acm_certificate_validation.site.certificate_arn
-    ssl_support_method       = "sni-only"    # Server Name Indication — standard, no extra cost
-    minimum_protocol_version = "TLSv1.2_2021"  # enforces modern TLS — no outdated protocols
+    ssl_support_method       = "sni-only"     # Server Name Indication — standard, no extra cost
+    minimum_protocol_version = "TLSv1.2_2021" # enforces modern TLS — no outdated protocols
   }
 
   tags = {
@@ -275,8 +275,8 @@ resource "aws_s3_bucket_policy" "site" {
     Version = "2012-10-17"
     Statement = [
       {
-        Sid       = "AllowCloudFrontOnly"
-        Effect    = "Allow"
+        Sid    = "AllowCloudFrontOnly"
+        Effect = "Allow"
         Principal = {
           Service = "cloudfront.amazonaws.com"
         }
@@ -315,7 +315,7 @@ resource "aws_route53_record" "root" {
   alias {
     name                   = aws_cloudfront_distribution.site.domain_name
     zone_id                = aws_cloudfront_distribution.site.hosted_zone_id
-    evaluate_target_health = false   # CloudFront doesn't support health checks here
+    evaluate_target_health = false # CloudFront doesn't support health checks here
   }
 }
 

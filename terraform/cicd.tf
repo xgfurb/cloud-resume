@@ -74,9 +74,10 @@ resource "aws_iam_role" "github_actions" {
             "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
           }
           StringLike = {
-            # sub = subject — restricts to your repo and main branch
-            # Change this if your GitHub username or repo name differs
-            "token.actions.githubusercontent.com:sub" = "repo:xgfurb/cloud-resume:ref:refs/heads/main"
+            # sub = subject — restricts to your repo only.
+            # Wildcard allows both push-to-main and pull_request events,
+            # which have different sub claims (ref:refs/heads/main vs pull_request).
+            "token.actions.githubusercontent.com:sub" = "repo:xgfurb/cloud-resume:*"
           }
         }
       }
@@ -101,6 +102,201 @@ resource "aws_iam_role" "github_actions" {
 # compromised, the attacker could only update your site and
 # Lambda function, not create new resources or access billing.
 # ────────────────────────────────────────────────────────────
+
+# ────────────────────────────────────────────────────────────
+# TERRAFORM OPERATIONS POLICY
+# ────────────────────────────────────────────────────────────
+# Additional permissions needed by the terraform-plan and
+# terraform-apply workflows: state backend access and full
+# read/write on all project-managed resources.
+# ────────────────────────────────────────────────────────────
+
+resource "aws_iam_role_policy" "github_actions_terraform" {
+  name = "cloud-resume-terraform-policy"
+  role = aws_iam_role.github_actions.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "TerraformStateS3"
+        Effect = "Allow"
+        Action = [
+          "s3:GetObject", "s3:PutObject", "s3:DeleteObject",
+          "s3:ListBucket", "s3:GetBucketVersioning",
+          "s3:GetEncryptionConfiguration", "s3:GetBucketLocation"
+        ]
+        Resource = [
+          "arn:aws:s3:::czresume-terraform-state",
+          "arn:aws:s3:::czresume-terraform-state/*"
+        ]
+      },
+      {
+        Sid    = "TerraformStateLock"
+        Effect = "Allow"
+        Action = [
+          "dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:DeleteItem",
+          "dynamodb:DescribeTable"
+        ]
+        Resource = "arn:aws:dynamodb:us-east-1:481088928034:table/czresume-terraform-locks"
+      },
+      {
+        Sid    = "S3ReadAll"
+        Effect = "Allow"
+        Action = [
+          "s3:GetBucketLocation", "s3:GetBucketPolicy",
+          "s3:GetBucketPublicAccessBlock", "s3:GetBucketVersioning",
+          "s3:GetBucketTagging", "s3:GetEncryptionConfiguration",
+          "s3:GetBucketWebsite", "s3:GetBucketCORS", "s3:GetBucketACL",
+          "s3:GetBucketLogging", "s3:GetBucketRequestPayment",
+          "s3:GetAccelerateConfiguration", "s3:GetBucketObjectLockConfiguration",
+          "s3:GetReplicationConfiguration", "s3:GetLifecycleConfiguration",
+          "s3:ListBucket", "s3:ListAllMyBuckets",
+          "s3:GetObject", "s3:PutObject", "s3:DeleteObject"
+        ]
+        Resource = "*"
+      },
+      {
+        Sid    = "S3Manage"
+        Effect = "Allow"
+        Action = [
+          "s3:CreateBucket", "s3:DeleteBucket",
+          "s3:PutBucketPolicy", "s3:DeleteBucketPolicy",
+          "s3:PutBucketPublicAccessBlock", "s3:PutBucketVersioning",
+          "s3:PutBucketTagging", "s3:PutEncryptionConfiguration"
+        ]
+        Resource = "*"
+      },
+      {
+        Sid    = "Route53"
+        Effect = "Allow"
+        Action = [
+          "route53:CreateHostedZone", "route53:DeleteHostedZone",
+          "route53:GetHostedZone", "route53:ListHostedZones",
+          "route53:ListHostedZonesByName", "route53:ChangeResourceRecordSets",
+          "route53:GetChange", "route53:ListResourceRecordSets",
+          "route53:ListTagsForResource", "route53:ChangeTagsForResource"
+        ]
+        Resource = "*"
+      },
+      {
+        Sid    = "ACM"
+        Effect = "Allow"
+        Action = [
+          "acm:RequestCertificate", "acm:DeleteCertificate",
+          "acm:DescribeCertificate", "acm:ListCertificates",
+          "acm:ListTagsForCertificate", "acm:AddTagsToCertificate",
+          "acm:RemoveTagsFromCertificate"
+        ]
+        Resource = "*"
+      },
+      {
+        Sid    = "CloudFrontManage"
+        Effect = "Allow"
+        Action = [
+          "cloudfront:CreateDistribution", "cloudfront:UpdateDistribution",
+          "cloudfront:DeleteDistribution", "cloudfront:GetDistribution",
+          "cloudfront:GetDistributionConfig", "cloudfront:ListDistributions",
+          "cloudfront:CreateOriginAccessControl", "cloudfront:UpdateOriginAccessControl",
+          "cloudfront:DeleteOriginAccessControl", "cloudfront:GetOriginAccessControl",
+          "cloudfront:GetOriginAccessControlConfig", "cloudfront:ListOriginAccessControls",
+          "cloudfront:ListTagsForResource", "cloudfront:TagResource",
+          "cloudfront:UntagResource"
+        ]
+        Resource = "*"
+      },
+      {
+        Sid      = "DynamoDBList"
+        Effect   = "Allow"
+        Action   = ["dynamodb:ListTables"]
+        Resource = "*"
+      },
+      {
+        Sid    = "DynamoDB"
+        Effect = "Allow"
+        Action = [
+          "dynamodb:CreateTable", "dynamodb:DeleteTable",
+          "dynamodb:DescribeTable", "dynamodb:UpdateTable",
+          "dynamodb:ListTagsOfResource", "dynamodb:TagResource",
+          "dynamodb:UntagResource", "dynamodb:GetItem", "dynamodb:PutItem",
+          "dynamodb:UpdateItem", "dynamodb:DeleteItem",
+          "dynamodb:DescribeContinuousBackups", "dynamodb:DescribeTimeToLive"
+        ]
+        Resource = [
+          "arn:aws:dynamodb:us-east-1:481088928034:table/cloud-resume-*",
+          "arn:aws:dynamodb:us-east-1:481088928034:table/czresume-*"
+        ]
+      },
+      {
+        Sid    = "Lambda"
+        Effect = "Allow"
+        Action = [
+          "lambda:CreateFunction", "lambda:DeleteFunction",
+          "lambda:GetFunction", "lambda:UpdateFunctionCode",
+          "lambda:UpdateFunctionConfiguration", "lambda:AddPermission",
+          "lambda:RemovePermission", "lambda:GetPolicy",
+          "lambda:ListTags", "lambda:TagResource", "lambda:UntagResource",
+          "lambda:GetFunctionCodeSigningConfig"
+        ]
+        Resource = "arn:aws:lambda:us-east-1:481088928034:function:cloud-resume-*"
+      },
+      {
+        Sid    = "APIGateway"
+        Effect = "Allow"
+        Action = [
+          "apigateway:GET", "apigateway:POST",
+          "apigateway:PUT", "apigateway:DELETE", "apigateway:PATCH"
+        ]
+        Resource = "*"
+      },
+      {
+        Sid    = "IAMRolesAndPolicies"
+        Effect = "Allow"
+        Action = [
+          "iam:CreateRole", "iam:DeleteRole", "iam:GetRole",
+          "iam:UpdateRole", "iam:UpdateAssumeRolePolicy",
+          "iam:ListRolePolicies", "iam:ListAttachedRolePolicies",
+          "iam:PutRolePolicy", "iam:GetRolePolicy", "iam:DeleteRolePolicy",
+          "iam:AttachRolePolicy", "iam:DetachRolePolicy",
+          "iam:TagRole", "iam:UntagRole", "iam:ListRoleTags"
+        ]
+        Resource = [
+          "arn:aws:iam::481088928034:role/cloud-resume-*",
+          "arn:aws:iam::481088928034:policy/cloud-resume-*"
+        ]
+      },
+      {
+        Sid      = "IAMPassRole"
+        Effect   = "Allow"
+        Action   = "iam:PassRole"
+        Resource = "arn:aws:iam::481088928034:role/cloud-resume-*"
+        Condition = {
+          StringEquals = {
+            "iam:PassedToService" = ["lambda.amazonaws.com", "apigateway.amazonaws.com"]
+          }
+        }
+      },
+      {
+        Sid      = "IAMOIDCList"
+        Effect   = "Allow"
+        Action   = ["iam:ListOpenIDConnectProviders"]
+        Resource = "*"
+      },
+      {
+        Sid    = "IAMOIDCProvider"
+        Effect = "Allow"
+        Action = [
+          "iam:CreateOpenIDConnectProvider", "iam:DeleteOpenIDConnectProvider",
+          "iam:GetOpenIDConnectProvider", "iam:UpdateOpenIDConnectProviderThumbprint",
+          "iam:AddClientIDToOpenIDConnectProvider", "iam:RemoveClientIDFromOpenIDConnectProvider",
+          "iam:TagOpenIDConnectProvider", "iam:UntagOpenIDConnectProvider",
+          "iam:ListOpenIDConnectProviderTags"
+        ]
+        Resource = "arn:aws:iam::481088928034:oidc-provider/token.actions.githubusercontent.com"
+      }
+    ]
+  })
+}
 
 resource "aws_iam_role_policy" "github_actions_deploy" {
   name = "cloud-resume-deploy-policy"

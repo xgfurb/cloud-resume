@@ -74,9 +74,10 @@ resource "aws_iam_role" "github_actions" {
             "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
           }
           StringLike = {
-            # sub = subject — restricts to your repo and main branch
-            # Change this if your GitHub username or repo name differs
-            "token.actions.githubusercontent.com:sub" = "repo:xgfurb/cloud-resume:ref:refs/heads/main"
+            # sub = subject — restricts to your repo only.
+            # Wildcard allows both push-to-main and pull_request events,
+            # which have different sub claims (ref:refs/heads/main vs pull_request).
+            "token.actions.githubusercontent.com:sub" = "repo:xgfurb/cloud-resume:*"
           }
         }
       }

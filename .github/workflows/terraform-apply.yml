@@ -6,6 +6,7 @@ on:
     paths:
       - 'terraform/**'
       - '!terraform/bootstrap/**'
+  workflow_dispatch:
 
 permissions:
   id-token: write

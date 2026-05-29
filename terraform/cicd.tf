@@ -236,7 +236,7 @@ resource "aws_iam_role_policy" "github_actions_terraform" {
           "lambda:UpdateFunctionConfiguration", "lambda:AddPermission",
           "lambda:RemovePermission", "lambda:GetPolicy",
           "lambda:ListTags", "lambda:TagResource", "lambda:UntagResource",
-          "lambda:GetFunctionCodeSigningConfig"
+          "lambda:GetFunctionCodeSigningConfig", "lambda:ListVersionsByFunction"
         ]
         Resource = "arn:aws:lambda:us-east-1:481088928034:function:cloud-resume-*"
       },

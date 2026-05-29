@@ -33,9 +33,9 @@ resource "aws_iam_openid_connect_provider" "github" {
 
   client_id_list = ["sts.amazonaws.com"]
 
-  # GitHub's OIDC thumbprint — this is a well-known static value
-  # that GitHub publishes. It validates the TLS connection.
-  thumbprint_list = ["ffffffffffffffffffffffffffffffffffffffff"]
+  # GitHub's OIDC thumbprint — SHA-1 of GitHub's OIDC TLS certificate.
+  # Published at https://docs.github.com/en/actions/security-for-github-actions/security-hardening-your-deployments/about-security-hardening-with-openid-connect
+  thumbprint_list = ["6938fd4d98bab03faadb97b34396831e3780aca2"]
 
   tags = {
     Project = "cloud-resume"

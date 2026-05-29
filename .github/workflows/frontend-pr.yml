@@ -1,0 +1,20 @@
+name: Frontend PR Checks
+
+on:
+  pull_request:
+    paths:
+      - 'frontend/**'
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run htmlhint
+        run: npx --yes htmlhint 'frontend/**/*.html'

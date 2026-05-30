@@ -22,7 +22,7 @@ jobs:
         id: changes
         run: |
           CHANGED=$(git diff --name-only origin/${{ github.base_ref }}...HEAD \
-            | grep '^terraform/' | grep -v '^terraform/bootstrap/')
+            | grep '^terraform/' | grep -v '^terraform/bootstrap/' || true)
           if [ -n "$CHANGED" ]; then
             echo "terraform=true" >> $GITHUB_OUTPUT
           else

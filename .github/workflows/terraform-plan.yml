@@ -21,11 +21,13 @@ jobs:
       - name: Check for terraform changes
         id: changes
         run: |
-          git diff --name-only origin/${{ github.base_ref }}...HEAD \
-            | grep -q '^terraform/' \
-            && grep -vq '^terraform/bootstrap/' \
-            && echo "terraform=true" >> $GITHUB_OUTPUT \
-            || echo "terraform=false" >> $GITHUB_OUTPUT
+          CHANGED=$(git diff --name-only origin/${{ github.base_ref }}...HEAD \
+            | grep '^terraform/' | grep -v '^terraform/bootstrap/' || true)
+          if [ -n "$CHANGED" ]; then
+            echo "terraform=true" >> $GITHUB_OUTPUT
+          else
+            echo "terraform=false" >> $GITHUB_OUTPUT
+          fi
 
       - name: Setup Terraform
         if: steps.changes.outputs.terraform == 'true'

@@ -3,7 +3,12 @@
 .terraform.lock.hcl
 *.tfstate
 *.tfstate.backup
+*.tfstate.*.backup
 terraform.tfvars
+
+# Python
+__pycache__/
+*.zip
 
 # AWS
 .aws-credentials

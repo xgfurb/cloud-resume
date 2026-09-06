@@ -21,7 +21,6 @@ Test structure follows the Arrange-Act-Assert pattern:
 """
 
 import json
-import os
 import boto3
 import pytest
 from moto import mock_aws
@@ -39,7 +38,7 @@ from moto import mock_aws
 # ────────────────────────────────────────────────────────────
 
 @pytest.fixture
-def aws_environment():
+def aws_environment(monkeypatch):
     """
     Creates a mock AWS environment with a DynamoDB table
     seeded with an initial counter value of 0.
@@ -54,8 +53,8 @@ def aws_environment():
         # initializes boto3 at module level without specifying a
         # region. On AWS, Lambda sets this automatically. In the
         # test environment, we have to set it ourselves.
-        os.environ["TABLE_NAME"] = "cloud-resume-counter"
-        os.environ["AWS_DEFAULT_REGION"] = "us-east-1"
+        monkeypatch.setenv("TABLE_NAME", "cloud-resume-counter")
+        monkeypatch.setenv("AWS_DEFAULT_REGION", "us-east-1")
 
         # Create the mock DynamoDB table (same schema as Terraform)
         dynamodb = boto3.resource("dynamodb", region_name="us-east-1")
@@ -173,3 +172,32 @@ class TestVisitorCounter:
 
         assert body["count"] > 0
         assert isinstance(body["count"], int)
+
+
+    def test_missing_counter_is_created(self, aws_environment):
+        lambda_function, table = aws_environment
+        table.delete_item(Key={"id": "visitors"})
+
+        result = lambda_function.handler({}, None)
+
+        assert result["statusCode"] == 200
+        assert json.loads(result["body"]) == {"count": 1}
+        assert table.get_item(Key={"id": "visitors"})["Item"]["visit_count"] == 1
+
+    def test_database_failure_returns_generic_error(self, aws_environment, monkeypatch):
+        from botocore.exceptions import ClientError
+
+        lambda_function, _ = aws_environment
+
+        def fail_update(**kwargs):
+            raise ClientError(
+                {"Error": {"Code": "AccessDeniedException", "Message": "private resource details"}},
+                "UpdateItem",
+            )
+
+        monkeypatch.setattr(lambda_function.table, "update_item", fail_update)
+        result = lambda_function.handler({}, None)
+
+        assert result["statusCode"] == 500
+        assert json.loads(result["body"]) == {"error": "Could not update visitor count"}
+        assert "private resource details" not in result["body"]

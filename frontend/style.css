@@ -193,7 +193,7 @@ header {
    Font scales with viewport width but never below 2.4rem
    or above 3.8rem.
 */
-.name {
+.header-identity h1 {
   font-family: 'Syne', sans-serif; /* different font from body — display font */
   font-size: clamp(2.4rem, 6vw, 3.8rem); /* vw = viewport width units */
   font-weight: 800;                /* extra bold */
@@ -202,8 +202,8 @@ header {
   line-height: 1;                  /* no extra line spacing for the name */
 }
 
-/* targets the <span> inside .name — colors "Zuck" with the accent color */
-.name span {
+/* targets the <span> inside .header-identity h1 — colors "Chris" with the accent color */
+.header-identity h1 span {
   color: var(--accent);
 }
 
@@ -344,7 +344,7 @@ section:nth-child(6) { animation-delay: 0.25s; }
    with ::after — a pseudo-element that draws a horizontal
    line using flex and flex: 1 (take all remaining space).
 */
-.section-label {
+section > h2 {
   font-family: 'Syne', sans-serif;
   font-size: 0.65rem;
   font-weight: 700;
@@ -357,7 +357,7 @@ section:nth-child(6) { animation-delay: 0.25s; }
   gap: 12px;
 }
 
-.section-label::after {
+section > h2::after {
   content: '';          /* required for pseudo-elements to render */
   flex: 1;              /* grows to fill all remaining horizontal space */
   height: 1px;
@@ -369,7 +369,7 @@ section:nth-child(6) { animation-delay: 0.25s; }
    SUMMARY
    ============================================================
 */
-.summary p {
+#summary p {
   color: var(--text);
   font-size: 0.88rem;
   line-height: 1.8;
@@ -396,7 +396,7 @@ section:nth-child(6) { animation-delay: 0.25s; }
   border-bottom: none;  /* removes border from the last job entry */
 }
 
-.job-title {
+.job-header h3 {
   font-family: 'Syne', sans-serif;
   font-size: 0.95rem;
   font-weight: 700;
@@ -416,17 +416,14 @@ section:nth-child(6) { animation-delay: 0.25s; }
   white-space: nowrap;  /* prevents date from wrapping to a new line */
 }
 
-.job-desc {
+.job > ul {
   grid-column: 1 / -1; /* span full width of the grid */
   margin-top: 8px;
-}
-
-.job-desc ul {
   list-style: none; /* removes default bullet points */
   padding: 0;
 }
 
-.job-desc li {
+.job > ul > li {
   font-size: 0.82rem;
   color: var(--text);
   padding: 3px 0 3px 16px; /* left padding creates space for our custom bullet */
@@ -434,7 +431,7 @@ section:nth-child(6) { animation-delay: 0.25s; }
 }
 
 /* custom bullet using ::before pseudo-element */
-.job-desc li::before {
+.job > ul > li::before {
   content: '▸';          /* triangle character as bullet */
   position: absolute;    /* positioned relative to the li */
   left: 0;               /* pinned to the left edge of the li */
@@ -468,13 +465,14 @@ section:nth-child(6) { animation-delay: 0.25s; }
   margin-bottom: 10px;
 }
 
-.skill-tags {
+.skill-group > ul {
+  list-style: none;
   display: flex;
   flex-wrap: wrap; /* tags wrap to next line if they don't fit */
   gap: 6px;
 }
 
-.tag {
+.skill-group > ul > li {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 3px;
@@ -484,7 +482,7 @@ section:nth-child(6) { animation-delay: 0.25s; }
   transition: border-color 0.2s, color 0.2s; /* animate both properties on hover */
 }
 
-.tag:hover {
+.skill-group > ul > li:hover {
   border-color: var(--accent-dim);
   color: var(--accent);
 }
@@ -495,6 +493,7 @@ section:nth-child(6) { animation-delay: 0.25s; }
    ============================================================
 */
 .cert-list {
+  list-style: none;
   display: flex;
   flex-direction: column; /* stacks children vertically (default flex is horizontal) */
   gap: 12px;
@@ -569,7 +568,7 @@ section:nth-child(6) { animation-delay: 0.25s; }
   border-bottom: none;
 }
 
-.edu-degree {
+.edu h3 {
   font-family: 'Syne', sans-serif;
   font-size: 0.92rem;
   font-weight: 700;
@@ -666,7 +665,7 @@ footer a:hover {
     grid-template-columns: 1fr; /* single column — contact goes below name */
   }
 
-  .contact {
+  .header-contact {
     text-align: left; /* left-align on mobile since it's no longer in the right column */
   }
 

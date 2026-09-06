@@ -1,6 +1,6 @@
 # Cloud Resume Challenge
 
-A serverless resume website built as part of the [Cloud Resume Challenge](https://cloudresumechallenge.dev), extended with a production-grade GitOps pipeline and security hardening.
+A serverless resume website built as part of the [Cloud Resume Challenge](https://cloudresumechallenge.dev), with a GitOps pipeline and security hardening.
 
 Live at: [czresume.com](https://czresume.com)
 
@@ -34,7 +34,7 @@ Live at: [czresume.com](https://czresume.com)
                           │           GitHub Actions             │
                           │                                      │
                           │  frontend  → S3 sync + CDN purge     │
-                          │  backend   → pytest → Lambda deploy  │
+                          │  backend   → tests → Terraform apply   │
                           │  terraform → manual approval → apply │
                           └──────────────┬───────────────────────┘
                                          │ OIDC (keyless auth)
@@ -52,13 +52,13 @@ Live at: [czresume.com](https://czresume.com)
 Every change goes through a pull request. No one pushes directly to `main`.
 
 **On pull request:**
-- `terraform/**` → Terraform fmt, validate, plan — plan output posted as a PR comment
+- `terraform/**`, `backend/**` → Terraform fmt, validate, policy tests, plan — plan output posted as a PR comment
 - `backend/**` → pytest
-- `frontend/**` → htmlhint
+- `frontend/**` → htmlhint and desktop/mobile browser tests
 
 **On merge to main:**
 - `frontend/**` → sync to S3, invalidate CloudFront cache
-- `backend/**` → run tests, zip, deploy to Lambda
+- `backend/**` → production approval, run tests, deploy Lambda through Terraform
 - `terraform/**` → pause for manual approval, then `terraform apply`
 
 Authentication between GitHub Actions and AWS uses OpenID Connect (OIDC) — no long-lived credentials stored anywhere.
@@ -79,24 +79,26 @@ Authentication between GitHub Actions and AWS uses OpenID Connect (OIDC) — no 
 │   └── providers.tf        # AWS provider + S3 remote backend config
 └── .github/workflows/
     ├── frontend.yml        # Deploy frontend on push to main
-    ├── backend.yml         # Test and deploy backend on push to main
     ├── frontend-pr.yml     # Lint frontend on pull request
-    ├── backend-pr.yml      # Test backend on pull request
+    ├── backend-pr.yml      # Test backend on pull request and main
     ├── terraform-plan.yml  # Plan on pull request, post as PR comment
     └── terraform-apply.yml # Apply on merge to main (manual approval required)
 ```
 
 ## Local Development
 
-**Prerequisites:** AWS CLI configured, Terraform >= 1.0, Python 3.12
+**Prerequisites:** AWS CLI configured, Terraform 1.15.4, Python 3.12, Node.js with npm
 
 ```bash
 # Run backend tests
-pip install boto3 moto pytest
+pip install -r backend/requirements-test.txt
 pytest backend/counter/test_counter.py -v
 
 # Lint frontend
-npx htmlhint 'frontend/**/*.html'
+npm ci
+npm run lint
+npx playwright install chromium
+npm test
 
 # Terraform (main infrastructure)
 cd terraform
@@ -112,7 +114,9 @@ terraform apply
 ## Security
 
 - **No stored credentials** — GitHub Actions authenticates via OIDC; temporary credentials expire after 1 hour
-- **Least privilege** — GitHub Actions role scoped to deploy actions only; dev IAM user scoped to project resources
-- **State protection** — Terraform state bucket has versioning, encryption, public access block, and an explicit Deny on destructive operations
-- **Branch protection** — all changes require a PR; `terraform plan` must pass before merging
-- **Manual gate** — infrastructure changes require explicit approval before `terraform apply` runs
+- **Separated CI roles** — PR planning, frontend deployment, and infrastructure deployment use distinct roles; CI cannot modify IAM permissions
+- **State protection** — Terraform state bucket has versioning, encryption, public access block, and S3 lockfile locking
+- **Branch protection** — configure GitHub to require PRs and passing checks before merging
+- **Manual gate** — configure the production environment to require approval and allow main only before enabling infrastructure deployments
+
+See [deployment and IAM rollout](docs/deployment.md) for the required migration, GitHub variables, and validation commands.

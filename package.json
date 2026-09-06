@@ -1,0 +1,12 @@
+{
+  "name": "cloud-resume",
+  "private": true,
+  "scripts": {
+    "lint": "htmlhint 'frontend/**/*.html'",
+    "test": "node --test tests/frontend.test.mjs"
+  },
+  "devDependencies": {
+    "htmlhint": "1.9.2",
+    "playwright": "1.63.0"
+  }
+}

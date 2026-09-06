@@ -4,6 +4,10 @@ on:
   pull_request:
     paths:
       - 'frontend/**'
+      - 'tests/**'
+      - 'package*.json'
+      - '.htmlhintrc'
+      - '.github/workflows/frontend-pr.yml'
 
 permissions:
   contents: read
@@ -16,5 +20,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # ratchet:actions/checkout@v4
 
+      - name: Install dependencies
+        run: npm ci
+
       - name: Run htmlhint
-        run: npx --yes htmlhint 'frontend/**/*.html'
+        run: npm run lint
+
+      - name: Install test browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Test frontend
+        run: npm test

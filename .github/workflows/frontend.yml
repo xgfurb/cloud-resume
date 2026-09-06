@@ -16,12 +16,21 @@ on:
     branches: [main]
     paths:
       - "frontend/**"
+      - ".github/workflows/frontend.yml"
 
 # OIDC requires these permissions to request the JWT token
 # from GitHub's OIDC provider and pass it to AWS.
 permissions:
   id-token: write # needed to request the OIDC JWT
   contents: read # needed to checkout the repo
+
+defaults:
+  run:
+    shell: bash
+
+concurrency:
+  group: production-frontend
+  cancel-in-progress: false
 
 jobs:
   deploy:
@@ -32,13 +41,18 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # ratchet:actions/checkout@v4
 
+      - name: Reject stale deployment
+        run: |
+          git fetch origin main
+          git diff --quiet "$GITHUB_SHA" origin/main -- frontend .github/workflows/frontend.yml || { echo 'This commit is stale; deploy the latest main run.'; exit 1; }
+
       # Step 2: Authenticate with AWS using OIDC
       # This action exchanges the GitHub OIDC token for temporary
       # AWS credentials (valid ~1 hour, auto-expire).
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # ratchet:aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          role-to-assume: ${{ vars.AWS_FRONTEND_ROLE_ARN }}
           aws-region: us-east-1
 
       # Step 3: Sync frontend files to S3

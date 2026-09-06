@@ -59,3 +59,13 @@ output "github_actions_role_arn" {
   description = "IAM role ARN for GitHub Actions OIDC"
   value       = aws_iam_role.github_actions.arn
 }
+
+output "github_plan_role_arn" {
+  description = "Repository variable AWS_PLAN_ROLE_ARN"
+  value       = aws_iam_role.github_actions_plan.arn
+}
+
+output "github_frontend_role_arn" {
+  description = "Repository variable AWS_FRONTEND_ROLE_ARN"
+  value       = aws_iam_role.github_actions_frontend.arn
+}

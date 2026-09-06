@@ -1,32 +1,5 @@
-# ============================================================
-# GITHUB ACTIONS OIDC — Phase 5
-# ============================================================
-# This file sets up keyless authentication between GitHub
-# Actions and AWS using OpenID Connect (OIDC).
-#
-# Instead of storing AWS access keys in GitHub Secrets,
-# GitHub Actions presents a short-lived JWT token to AWS.
-# AWS verifies the token came from your specific repo and
-# grants temporary credentials that expire in 1 hour.
-#
-# Benefits:
-#   - No long-lived credentials stored anywhere
-#   - Credentials auto-expire — no rotation needed
-#   - Scoped to your specific repo and branches
-#   - If GitHub is compromised, there are no keys to steal
-# ============================================================
-
-
-# ────────────────────────────────────────────────────────────
-# OIDC IDENTITY PROVIDER
-# ────────────────────────────────────────────────────────────
-# This tells AWS "trust tokens issued by GitHub's OIDC
-# provider." It's a one-time setup per AWS account — even
-# if you had 10 repos, you'd only need one provider.
-#
-# The thumbprint_list is a hash of GitHub's TLS certificate.
-# AWS uses it to verify the connection to GitHub is authentic.
-# ────────────────────────────────────────────────────────────
+# CI can read IAM configuration, but only an administrator can change it.
+# See docs/deployment.md before rolling out these role and workflow changes.
 
 resource "aws_iam_openid_connect_provider" "github" {
   url = "https://token.actions.githubusercontent.com"
@@ -42,74 +15,143 @@ resource "aws_iam_openid_connect_provider" "github" {
   }
 }
 
-
-# ────────────────────────────────────────────────────────────
-# IAM ROLE FOR GITHUB ACTIONS
-# ────────────────────────────────────────────────────────────
-# This role is what GitHub Actions "assumes" when it needs
-# to interact with AWS. The trust policy restricts it to:
-#   - Only tokens from GitHub's OIDC provider
-#   - Only your specific repository
-#   - Only the main branch
-#
-# The permission policy (below) limits what the role can do
-# to only the actions needed for deployment.
-# ────────────────────────────────────────────────────────────
-
 resource "aws_iam_role" "github_actions" {
   name = "cloud-resume-github-actions"
-
   assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect    = "Allow"
+      Action    = "sts:AssumeRoleWithWebIdentity"
+      Principal = { Federated = aws_iam_openid_connect_provider.github.arn }
+      Condition = {
+        StringEquals = {
+          "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
+          "token.actions.githubusercontent.com:sub" = "repo:xgfurb/cloud-resume:environment:production"
+        }
+      }
+    }]
+  })
+  tags = { Project = "cloud-resume" }
+}
+
+resource "aws_iam_role" "github_actions_plan" {
+  name = "cloud-resume-github-plan"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect    = "Allow"
+      Action    = "sts:AssumeRoleWithWebIdentity"
+      Principal = { Federated = aws_iam_openid_connect_provider.github.arn }
+      Condition = {
+        StringEquals = {
+          "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
+          "token.actions.githubusercontent.com:sub" = "repo:xgfurb/cloud-resume:pull_request"
+        }
+      }
+    }]
+  })
+  tags = { Project = "cloud-resume" }
+}
+
+resource "aws_iam_role" "github_actions_frontend" {
+  name = "cloud-resume-github-frontend"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect    = "Allow"
+      Action    = "sts:AssumeRoleWithWebIdentity"
+      Principal = { Federated = aws_iam_openid_connect_provider.github.arn }
+      Condition = {
+        StringEquals = {
+          "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
+          "token.actions.githubusercontent.com:sub" = "repo:xgfurb/cloud-resume:ref:refs/heads/main"
+        }
+      }
+    }]
+  })
+  tags = { Project = "cloud-resume" }
+}
+
+resource "aws_iam_role_policy" "terraform_read" {
+  for_each = {
+    plan  = aws_iam_role.github_actions_plan.id
+    apply = aws_iam_role.github_actions.id
+  }
+  name = "cloud-resume-terraform-read"
+  role = each.value
+  policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
       {
+        Sid    = "ReadInfrastructure"
         Effect = "Allow"
-        Principal = {
-          Federated = aws_iam_openid_connect_provider.github.arn
-        }
-        Action = "sts:AssumeRoleWithWebIdentity"
-        Condition = {
-          StringEquals = {
-            # aud = audience — must match the client_id above
-            "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
-          }
-          StringLike = {
-            # sub = subject — restricts to your repo only.
-            # Wildcard allows both push-to-main and pull_request events,
-            # which have different sub claims (ref:refs/heads/main vs pull_request).
-            "token.actions.githubusercontent.com:sub" = "repo:xgfurb/cloud-resume:*"
-          }
-        }
+        Action = [
+          "acm:DescribeCertificate",
+          "acm:ListCertificates",
+          "acm:ListTagsForCertificate",
+          "cloudfront:GetDistribution",
+          "cloudfront:GetDistributionConfig",
+          "cloudfront:GetOriginAccessControl",
+          "cloudfront:GetOriginAccessControlConfig",
+          "cloudfront:ListDistributions",
+          "cloudfront:ListOriginAccessControls",
+          "cloudfront:ListTagsForResource",
+          "dynamodb:DescribeContinuousBackups",
+          "dynamodb:DescribeTable",
+          "dynamodb:DescribeTimeToLive",
+          "dynamodb:GetItem",
+          "dynamodb:ListTables",
+          "dynamodb:ListTagsOfResource",
+          "iam:GetOpenIDConnectProvider",
+          "iam:GetRole",
+          "iam:GetRolePolicy",
+          "iam:ListAttachedRolePolicies",
+          "iam:ListOpenIDConnectProviderTags",
+          "iam:ListOpenIDConnectProviders",
+          "iam:ListRolePolicies",
+          "iam:ListRoleTags",
+          "lambda:GetFunction",
+          "lambda:GetFunctionCodeSigningConfig",
+          "lambda:GetPolicy",
+          "lambda:ListTags",
+          "lambda:ListVersionsByFunction",
+          "route53:GetChange",
+          "route53:GetHostedZone",
+          "route53:ListHostedZones",
+          "route53:ListHostedZonesByName",
+          "route53:ListResourceRecordSets",
+          "route53:ListTagsForResource",
+          "apigateway:GET",
+        ]
+        Resource = "*"
+      },
+      {
+        Sid      = "ReadSiteBucketConfiguration"
+        Effect   = "Allow"
+        Action   = ["s3:GetBucket*", "s3:GetEncryptionConfiguration", "s3:GetReplicationConfiguration", "s3:GetLifecycleConfiguration", "s3:GetAccelerateConfiguration"]
+        Resource = aws_s3_bucket.site.arn
+      },
+      {
+        Sid      = "ReadStateBucket"
+        Effect   = "Allow"
+        Action   = ["s3:ListBucket", "s3:GetBucketLocation"]
+        Resource = "arn:aws:s3:::czresume-terraform-state"
+      },
+      {
+        Sid      = "ReadState"
+        Effect   = "Allow"
+        Action   = "s3:GetObject"
+        Resource = "arn:aws:s3:::czresume-terraform-state/cloud-resume/terraform.tfstate"
+      },
+      {
+        Sid      = "StateLock"
+        Effect   = "Allow"
+        Action   = ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"]
+        Resource = "arn:aws:s3:::czresume-terraform-state/cloud-resume/terraform.tfstate.tflock"
       }
     ]
   })
-
-  tags = {
-    Project = "cloud-resume"
-  }
 }
-
-
-# ────────────────────────────────────────────────────────────
-# PERMISSIONS FOR GITHUB ACTIONS ROLE
-# ────────────────────────────────────────────────────────────
-# Scoped to only what the CI/CD pipeline needs:
-#   - S3: sync frontend files to the bucket
-#   - CloudFront: invalidate cache after deploy
-#   - Lambda: update the function code
-#
-# This is least privilege — if these credentials were somehow
-# compromised, the attacker could only update your site and
-# Lambda function, not create new resources or access billing.
-# ────────────────────────────────────────────────────────────
-
-# ────────────────────────────────────────────────────────────
-# TERRAFORM OPERATIONS POLICY
-# ────────────────────────────────────────────────────────────
-# Additional permissions needed by the terraform-plan and
-# terraform-apply workflows: state backend access and full
-# read/write on all project-managed resources.
-# ────────────────────────────────────────────────────────────
 
 resource "aws_iam_role_policy" "github_actions_terraform" {
   name = "cloud-resume-terraform-policy"
@@ -119,29 +161,13 @@ resource "aws_iam_role_policy" "github_actions_terraform" {
     Version = "2012-10-17"
     Statement = [
       {
-        Sid    = "TerraformStateS3"
-        Effect = "Allow"
-        Action = [
-          "s3:GetObject", "s3:PutObject", "s3:DeleteObject",
-          "s3:ListBucket", "s3:GetBucketVersioning",
-          "s3:GetEncryptionConfiguration", "s3:GetBucketLocation"
-        ]
-        Resource = [
-          "arn:aws:s3:::czresume-terraform-state",
-          "arn:aws:s3:::czresume-terraform-state/*"
-        ]
+        Sid      = "WriteState"
+        Effect   = "Allow"
+        Action   = "s3:PutObject"
+        Resource = "arn:aws:s3:::czresume-terraform-state/cloud-resume/terraform.tfstate"
       },
       {
-        Sid    = "TerraformStateLock"
-        Effect = "Allow"
-        Action = [
-          "dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:DeleteItem",
-          "dynamodb:DescribeTable"
-        ]
-        Resource = "arn:aws:dynamodb:us-east-1:481088928034:table/czresume-terraform-locks"
-      },
-      {
-        Sid    = "S3ReadAll"
+        Sid    = "SiteBucketAccess"
         Effect = "Allow"
         Action = [
           "s3:GetBucketLocation", "s3:GetBucketPolicy",
@@ -151,10 +177,10 @@ resource "aws_iam_role_policy" "github_actions_terraform" {
           "s3:GetBucketLogging", "s3:GetBucketRequestPayment",
           "s3:GetAccelerateConfiguration", "s3:GetBucketObjectLockConfiguration",
           "s3:GetReplicationConfiguration", "s3:GetLifecycleConfiguration",
-          "s3:ListBucket", "s3:ListAllMyBuckets",
+          "s3:ListBucket",
           "s3:GetObject", "s3:PutObject", "s3:DeleteObject"
         ]
-        Resource = "*"
+        Resource = [aws_s3_bucket.site.arn, "${aws_s3_bucket.site.arn}/*"]
       },
       {
         Sid    = "S3Manage"
@@ -165,7 +191,7 @@ resource "aws_iam_role_policy" "github_actions_terraform" {
           "s3:PutBucketPublicAccessBlock", "s3:PutBucketVersioning",
           "s3:PutBucketTagging", "s3:PutEncryptionConfiguration"
         ]
-        Resource = "*"
+        Resource = [aws_s3_bucket.site.arn, "${aws_s3_bucket.site.arn}/*"]
       },
       {
         Sid    = "Route53"
@@ -250,49 +276,13 @@ resource "aws_iam_role_policy" "github_actions_terraform" {
         Resource = "*"
       },
       {
-        Sid    = "IAMRolesAndPolicies"
-        Effect = "Allow"
-        Action = [
-          "iam:CreateRole", "iam:DeleteRole", "iam:GetRole",
-          "iam:UpdateRole", "iam:UpdateAssumeRolePolicy",
-          "iam:ListRolePolicies", "iam:ListAttachedRolePolicies",
-          "iam:PutRolePolicy", "iam:GetRolePolicy", "iam:DeleteRolePolicy",
-          "iam:AttachRolePolicy", "iam:DetachRolePolicy",
-          "iam:TagRole", "iam:UntagRole", "iam:ListRoleTags"
-        ]
-        Resource = [
-          "arn:aws:iam::481088928034:role/cloud-resume-*",
-          "arn:aws:iam::481088928034:policy/cloud-resume-*"
-        ]
-      },
-      {
-        Sid      = "IAMPassRole"
+        Sid      = "PassLambdaExecutionRole"
         Effect   = "Allow"
         Action   = "iam:PassRole"
-        Resource = "arn:aws:iam::481088928034:role/cloud-resume-*"
+        Resource = aws_iam_role.lambda_role.arn
         Condition = {
-          StringEquals = {
-            "iam:PassedToService" = ["lambda.amazonaws.com", "apigateway.amazonaws.com"]
-          }
+          StringEquals = { "iam:PassedToService" = "lambda.amazonaws.com" }
         }
-      },
-      {
-        Sid      = "IAMOIDCList"
-        Effect   = "Allow"
-        Action   = ["iam:ListOpenIDConnectProviders"]
-        Resource = "*"
-      },
-      {
-        Sid    = "IAMOIDCProvider"
-        Effect = "Allow"
-        Action = [
-          "iam:CreateOpenIDConnectProvider", "iam:DeleteOpenIDConnectProvider",
-          "iam:GetOpenIDConnectProvider", "iam:UpdateOpenIDConnectProviderThumbprint",
-          "iam:AddClientIDToOpenIDConnectProvider", "iam:RemoveClientIDFromOpenIDConnectProvider",
-          "iam:TagOpenIDConnectProvider", "iam:UntagOpenIDConnectProvider",
-          "iam:ListOpenIDConnectProviderTags"
-        ]
-        Resource = "arn:aws:iam::481088928034:oidc-provider/token.actions.githubusercontent.com"
       }
     ]
   })
@@ -300,7 +290,7 @@ resource "aws_iam_role_policy" "github_actions_terraform" {
 
 resource "aws_iam_role_policy" "github_actions_deploy" {
   name = "cloud-resume-deploy-policy"
-  role = aws_iam_role.github_actions.id
+  role = aws_iam_role.github_actions_frontend.id
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -326,14 +316,6 @@ resource "aws_iam_role_policy" "github_actions_deploy" {
           "cloudfront:CreateInvalidation"
         ]
         Resource = aws_cloudfront_distribution.site.arn
-      },
-      {
-        # Lambda: update the function code
-        Effect = "Allow"
-        Action = [
-          "lambda:UpdateFunctionCode"
-        ]
-        Resource = aws_lambda_function.visitor_counter.arn
       }
     ]
   })

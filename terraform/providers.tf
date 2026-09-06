@@ -17,6 +17,10 @@ terraform {
   # required_providers tells Terraform which provider plugin
   # to download and from where (the HashiCorp registry)
   required_providers {
+    archive = {
+      source  = "hashicorp/archive"
+      version = "~> 2.8"
+    }
     aws = {
       source  = "hashicorp/aws" # official AWS provider
       version = "~> 5.0"        # any 5.x version — the ~> means
@@ -26,12 +30,12 @@ terraform {
   }
 
   # minimum Terraform version required to use this config
-  required_version = ">= 1.0"
+  required_version = ">= 1.12, < 2.0"
 
   # Remote state storage — keeps terraform.tfstate in S3
   # so it survives machine swaps and enables team collaboration.
-  # The S3 bucket and DynamoDB lock table are created by the
-  # bootstrap config in terraform/bootstrap/.
+  # The S3 bucket is created by the
+  # bootstrap config in terraform/bootstrap/. Locking uses an S3 lockfile.
   backend "s3" {
     bucket       = "czresume-terraform-state"
     key          = "cloud-resume/terraform.tfstate"

@@ -1,6 +1,5 @@
 # Terraform
 .terraform/
-.terraform.lock.hcl
 *.tfstate
 *.tfstate.backup
 *.tfstate.*.backup
@@ -15,3 +14,10 @@ __pycache__/
 
 # OS
 .DS_Store
+
+.pytest_cache/
+node_modules/
+
+# Saved plans can contain state values
+*.tfplan
+terraform/tfplan

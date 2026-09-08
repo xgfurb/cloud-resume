@@ -118,6 +118,7 @@
     },
     {
       "Action": [
+        "s3:ListBucket",
         "s3:GetBucket*",
         "s3:GetEncryptionConfiguration",
         "s3:GetReplicationConfiguration",

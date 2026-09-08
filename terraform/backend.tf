@@ -32,6 +32,10 @@ resource "aws_dynamodb_table" "visitor_counter" {
   billing_mode = "PAY_PER_REQUEST"
   hash_key     = "id"
 
+  point_in_time_recovery {
+    enabled = true
+  }
+
   # attribute defines the schema for the partition key only.
   # DynamoDB is schemaless — other attributes (like "visits")
   # don't need to be declared here, they're added at runtime.
@@ -138,7 +142,7 @@ resource "aws_iam_role_policy" "lambda_dynamodb" {
           "logs:CreateLogStream",
           "logs:PutLogEvents"
         ]
-        Resource = "arn:aws:logs:*:*:*"
+        Resource = "arn:aws:logs:${var.aws_region}:481088928034:log-group:/aws/lambda/cloud-resume-counter:*"
       }
     ]
   })

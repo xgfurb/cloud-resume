@@ -332,3 +332,11 @@ resource "aws_route53_record" "www" {
     evaluate_target_health = false
   }
 }
+
+# Retain prior deployed files for recovery after an accidental overwrite.
+resource "aws_s3_bucket_versioning" "site" {
+  bucket = aws_s3_bucket.site.id
+  versioning_configuration {
+    status = "Enabled"
+  }
+}

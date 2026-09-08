@@ -151,7 +151,7 @@ resource "aws_iam_role_policy" "terraform_read" {
       {
         Sid      = "ReadSiteBucketConfiguration"
         Effect   = "Allow"
-        Action   = ["s3:GetBucket*", "s3:GetEncryptionConfiguration", "s3:GetReplicationConfiguration", "s3:GetLifecycleConfiguration", "s3:GetAccelerateConfiguration"]
+        Action   = ["s3:ListBucket", "s3:GetBucket*", "s3:GetEncryptionConfiguration", "s3:GetReplicationConfiguration", "s3:GetLifecycleConfiguration", "s3:GetAccelerateConfiguration"]
         Resource = aws_s3_bucket.site.arn
       },
       {
@@ -227,7 +227,7 @@ resource "aws_iam_role_policy" "github_actions_terraform" {
       {
         Sid      = "ManageCounterTable"
         Effect   = "Allow"
-        Action   = ["dynamodb:CreateTable", "dynamodb:DeleteTable", "dynamodb:UpdateTable", "dynamodb:TagResource", "dynamodb:UntagResource"]
+        Action   = ["dynamodb:CreateTable", "dynamodb:DeleteTable", "dynamodb:UpdateTable", "dynamodb:UpdateContinuousBackups", "dynamodb:TagResource", "dynamodb:UntagResource"]
         Resource = aws_dynamodb_table.visitor_counter.arn
       },
       {

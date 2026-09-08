@@ -138,3 +138,42 @@ unexpected grants, sets a new managed policy version, and retains the old versio
 for administrative rollback. Do this after the CI migration is verified. Future
 IAM/bootstrap changes must use the administrator session. The developer identity
 will no longer be able to publish files, mutate infrastructure, or edit IAM roles.
+
+### Security follow-up: bucket refresh and recovery
+
+The administrator completed the developer restriction and detached the legacy
+`cloud-resume-terraform-policy` managed policy from the developer user. Root MFA,
+no active root access keys, and enabled billing alerts were confirmed by the
+account owner on 2026-09-08; these account settings were not independently read
+with the restricted developer identity.
+
+The follow-up restores `s3:ListBucket` on the site bucket for developer/PR
+refreshes. AWS requires it for `HeadBucket`; without it Terraform can incorrectly
+plan to recreate the existing bucket. It does not grant object contents or writes.
+It also scopes Lambda logs to its own log group, enables site object versioning,
+and enables counter point-in-time recovery. Version storage and backups can add
+small usage-based charges.
+
+Before merging/deploying this follow-up, run from a checkout of this revision in
+administrator CloudShell:
+
+```bash
+python3 scripts/repair-security-permissions.py
+```
+
+The script checks the AWS account and expected policy statements, backs up the
+four original role policies under `~/cloud-resume-policy-backup-*`, updates the
+developer managed policy while retaining its prior version, then updates the
+specific role grants. If an API call fails, earlier successful changes remain;
+use the printed backups and inspect the failure before retrying. The script does
+not delete policy versions automatically.
+
+Rerun PR checks and review a fresh plan after this step. Do not apply the earlier
+local plan that incorrectly proposed recreating the site bucket. The earlier
+security-header/counter-limit deployment is still pending; deploy the latest
+reviewed main revision after this fix is merged.
+
+API/CloudFront access logging and Lambda log retention remain follow-up work;
+they require deliberate log destinations, retention, and administrative setup.
+State-bucket protections and account-wide audit/credential status remain
+unverified by the restricted developer identity.

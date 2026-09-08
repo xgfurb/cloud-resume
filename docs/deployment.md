@@ -115,7 +115,9 @@ block inline script execution. Deploy that frontend before approving the first
 headers rollout, then verify the live response headers and page behavior.
 
 API Gateway permits a sustained one request per second with a burst of five.
-Lambda reserves two concurrent executions. These controls limit execution rate;
+Lambda currently uses the account concurrency pool because AWS rejected a reservation
+of two under this account quota. Set `counter_reserved_concurrency = 2` after an
+administrator obtains enough regional quota to retain the required unreserved pool. These controls limit execution rate;
 they do not authenticate visitors or create a hard dollar spending limit.
 
 ### Final developer-policy restriction (administrator required)
@@ -177,3 +179,8 @@ API/CloudFront access logging and Lambda log retention remain follow-up work;
 they require deliberate log destinations, retention, and administrative setup.
 State-bucket protections and account-wide audit/credential status remain
 unverified by the restricted developer identity.
+
+The 2026-09-08 rollout applied headers, API throttling, site versioning and counter
+backups, but AWS rejected Lambda reserved concurrency. The default reservation is
+therefore `-1` (unreserved); this is not a per-function concurrency cap. API throttling
+remains enabled. The policy repair and live bucket-existence check succeeded.

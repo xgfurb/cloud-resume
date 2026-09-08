@@ -75,7 +75,7 @@ Other controls include:
 
 - S3 public access blocking and CloudFront Origin Access Control.
 - HTTPS redirection and an ACM certificate on CloudFront.
-- API CORS restricted to the resume domains, one request/second throttling (burst five), and two concurrent Lambda executions. The counter remains a public endpoint; CORS is not authentication.
+- API CORS restricted to the resume domains, one request/second throttling (burst five). A two-execution Lambda reservation is configurable after an account quota increase; currently Lambda uses the shared account pool. The counter remains a public endpoint; CORS is not authentication.
 - Versioned, encrypted, non-public Terraform state with a separate S3 lockfile.
 - Production deployments restricted to `main`, with the sole administrator as reviewer, self-approval allowed, and administrator bypass disabled.
 - CloudFront CSP, HSTS, framing and MIME-sniffing protection, plus a referrer policy.

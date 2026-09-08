@@ -66,8 +66,8 @@ run "ci_permissions" {
     error_message = "PR planning must not read arbitrary account resources or application data."
   }
   assert {
-    condition     = aws_lambda_function.visitor_counter.reserved_concurrent_executions == 2 && aws_apigatewayv2_stage.default.default_route_settings[0].throttling_rate_limit == 1
-    error_message = "Public counter execution and request rates must be bounded."
+    condition     = aws_lambda_function.visitor_counter.reserved_concurrent_executions == var.counter_reserved_concurrency && aws_apigatewayv2_stage.default.default_route_settings[0].throttling_rate_limit == 1
+    error_message = "Counter reservation must match account configuration and API requests must stay throttled."
   }
 
   assert {

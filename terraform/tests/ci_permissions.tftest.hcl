@@ -70,4 +70,13 @@ run "ci_permissions" {
     error_message = "Public counter execution and request rates must be bounded."
   }
 
+  assert {
+    condition     = alltrue([for statement in jsondecode(aws_iam_role_policy.terraform_read["plan"].policy).Statement : contains(try(tolist(statement.Action), [statement.Action]), "s3:ListBucket") if statement.Sid == "ReadSiteBucketConfiguration"])
+    error_message = "The PR role needs bucket-scoped ListBucket so HeadBucket does not produce a false deletion plan."
+  }
+  assert {
+    condition     = contains([for statement in jsondecode(file("${path.module}/bootstrap/dev-policy.json")).Statement : contains(try(tolist(statement.Action), [statement.Action]), "s3:ListBucket") if statement.Sid == "ReadSiteBucketConfiguration"], true)
+    error_message = "Developer refresh must retain the site bucket existence check."
+  }
+
 }

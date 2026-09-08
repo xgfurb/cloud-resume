@@ -50,7 +50,7 @@ jobs:
       # This action exchanges the GitHub OIDC token for temporary
       # AWS credentials (valid ~1 hour, auto-expire).
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # ratchet:aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@cbe3b392738ccf3f987d68400dafcf4b0624a56c # ratchet:aws-actions/configure-aws-credentials@v6.2.4
         with:
           role-to-assume: ${{ vars.AWS_FRONTEND_ROLE_ARN }}
           aws-region: us-east-1

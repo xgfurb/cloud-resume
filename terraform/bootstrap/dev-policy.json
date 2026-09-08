@@ -1,0 +1,157 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Action": [
+        "acm:DescribeCertificate",
+        "acm:ListTagsForCertificate"
+      ],
+      "Effect": "Allow",
+      "Resource": "arn:aws:acm:us-east-1:481088928034:certificate/4ed26606-bc74-4892-8e0f-733de7b62984",
+      "Sid": "ReadCertificate"
+    },
+    {
+      "Action": [
+        "cloudfront:GetDistribution",
+        "cloudfront:GetDistributionConfig",
+        "cloudfront:ListTagsForResource"
+      ],
+      "Effect": "Allow",
+      "Resource": "arn:aws:cloudfront::481088928034:distribution/E26JRDNSG6D33",
+      "Sid": "ReadDistribution"
+    },
+    {
+      "Action": [
+        "cloudfront:GetOriginAccessControl",
+        "cloudfront:GetOriginAccessControlConfig"
+      ],
+      "Effect": "Allow",
+      "Resource": "arn:aws:cloudfront::481088928034:origin-access-control/E1QJ6YAKQ6FVWV",
+      "Sid": "ReadOriginControl"
+    },
+    {
+      "Action": [
+        "cloudfront:GetResponseHeadersPolicy"
+      ],
+      "Effect": "Allow",
+      "Resource": "arn:aws:cloudfront::481088928034:response-headers-policy/*",
+      "Sid": "ReadResponseHeaders"
+    },
+    {
+      "Action": [
+        "dynamodb:DescribeContinuousBackups",
+        "dynamodb:DescribeTable",
+        "dynamodb:DescribeTimeToLive",
+        "dynamodb:ListTagsOfResource"
+      ],
+      "Effect": "Allow",
+      "Resource": "arn:aws:dynamodb:us-east-1:481088928034:table/cloud-resume-counter",
+      "Sid": "ReadCounterMetadata"
+    },
+    {
+      "Action": [
+        "iam:GetRole",
+        "iam:GetRolePolicy",
+        "iam:ListAttachedRolePolicies",
+        "iam:ListRolePolicies",
+        "iam:ListRoleTags"
+      ],
+      "Effect": "Allow",
+      "Resource": [
+        "arn:aws:iam::481088928034:role/cloud-resume-lambda-role",
+        "arn:aws:iam::481088928034:role/cloud-resume-github-actions",
+        "arn:aws:iam::481088928034:role/cloud-resume-github-plan",
+        "arn:aws:iam::481088928034:role/cloud-resume-github-frontend"
+      ],
+      "Sid": "ReadProjectRoles"
+    },
+    {
+      "Action": [
+        "iam:GetOpenIDConnectProvider",
+        "iam:ListOpenIDConnectProviderTags"
+      ],
+      "Effect": "Allow",
+      "Resource": "arn:aws:iam::481088928034:oidc-provider/token.actions.githubusercontent.com",
+      "Sid": "ReadOIDC"
+    },
+    {
+      "Action": [
+        "lambda:GetFunction",
+        "lambda:GetFunctionCodeSigningConfig",
+        "lambda:GetPolicy",
+        "lambda:ListTags",
+        "lambda:ListVersionsByFunction",
+        "lambda:GetFunctionConcurrency"
+      ],
+      "Effect": "Allow",
+      "Resource": "arn:aws:lambda:us-east-1:481088928034:function:cloud-resume-counter",
+      "Sid": "ReadCounterFunction"
+    },
+    {
+      "Action": [
+        "route53:GetHostedZone",
+        "route53:ListResourceRecordSets",
+        "route53:ListTagsForResource"
+      ],
+      "Effect": "Allow",
+      "Resource": "arn:aws:route53:::hostedzone/Z0508532UFBVXT08SCLX",
+      "Sid": "ReadZone"
+    },
+    {
+      "Action": [
+        "route53:GetChange"
+      ],
+      "Effect": "Allow",
+      "Resource": "arn:aws:route53:::change/*",
+      "Sid": "ReadDNSChanges"
+    },
+    {
+      "Action": [
+        "apigateway:GET"
+      ],
+      "Effect": "Allow",
+      "Resource": [
+        "arn:aws:apigateway:us-east-1::/apis/rgmtlia3mi",
+        "arn:aws:apigateway:us-east-1::/apis/rgmtlia3mi/*"
+      ],
+      "Sid": "ReadCounterAPI"
+    },
+    {
+      "Action": [
+        "s3:GetBucket*",
+        "s3:GetEncryptionConfiguration",
+        "s3:GetReplicationConfiguration",
+        "s3:GetLifecycleConfiguration",
+        "s3:GetAccelerateConfiguration"
+      ],
+      "Effect": "Allow",
+      "Resource": "arn:aws:s3:::czresume.com",
+      "Sid": "ReadSiteBucketConfiguration"
+    },
+    {
+      "Action": [
+        "s3:ListBucket",
+        "s3:GetBucketLocation"
+      ],
+      "Effect": "Allow",
+      "Resource": "arn:aws:s3:::czresume-terraform-state",
+      "Sid": "ReadStateBucket"
+    },
+    {
+      "Action": "s3:GetObject",
+      "Effect": "Allow",
+      "Resource": "arn:aws:s3:::czresume-terraform-state/cloud-resume/terraform.tfstate",
+      "Sid": "ReadState"
+    },
+    {
+      "Action": [
+        "s3:GetObject",
+        "s3:PutObject",
+        "s3:DeleteObject"
+      ],
+      "Effect": "Allow",
+      "Resource": "arn:aws:s3:::czresume-terraform-state/cloud-resume/terraform.tfstate.tflock",
+      "Sid": "StateLock"
+    }
+  ]
+}

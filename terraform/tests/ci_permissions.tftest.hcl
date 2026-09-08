@@ -1,5 +1,20 @@
 mock_provider "aws" {
   override_during = plan
+  mock_resource "aws_dynamodb_table" {
+    defaults = { arn = "arn:aws:dynamodb:us-east-1:481088928034:table/cloud-resume-counter" }
+  }
+  mock_resource "aws_lambda_function" {
+    defaults = { arn = "arn:aws:lambda:us-east-1:481088928034:function:cloud-resume-counter" }
+  }
+  mock_resource "aws_route53_zone" {
+    defaults = { arn = "arn:aws:route53:::hostedzone/TEST" }
+  }
+  mock_resource "aws_cloudfront_origin_access_control" {
+    defaults = { id = "TEST" }
+  }
+  mock_resource "aws_apigatewayv2_api" {
+    defaults = { id = "TEST", execution_arn = "arn:aws:execute-api:us-east-1:481088928034:TEST" }
+  }
   mock_resource "aws_s3_bucket" {
     defaults = { arn = "arn:aws:s3:::czresume.com" }
   }
@@ -46,4 +61,13 @@ run "ci_permissions" {
     condition     = alltrue([for s in jsondecode(aws_iam_role_policy.github_actions_terraform.policy).Statement : !contains(try(tolist(s.Action), [s.Action]), "s3:PutObject") || !contains(try(tolist(s.Resource), [s.Resource]), "*")])
     error_message = "S3 object writes must not be account-wide."
   }
+  assert {
+    condition     = alltrue([for s in jsondecode(aws_iam_role_policy.terraform_read["plan"].policy).Statement : !contains(try(tolist(s.Resource), [s.Resource]), "*") && !contains(try(tolist(s.Action), [s.Action]), "dynamodb:GetItem")])
+    error_message = "PR planning must not read arbitrary account resources or application data."
+  }
+  assert {
+    condition     = aws_lambda_function.visitor_counter.reserved_concurrent_executions == 2 && aws_apigatewayv2_stage.default.default_route_settings[0].throttling_rate_limit == 1
+    error_message = "Public counter execution and request rates must be bounded."
+  }
+
 }

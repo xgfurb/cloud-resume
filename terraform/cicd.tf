@@ -83,47 +83,70 @@ resource "aws_iam_role_policy" "terraform_read" {
     Version = "2012-10-17"
     Statement = [
       {
-        Sid    = "ReadInfrastructure"
-        Effect = "Allow"
-        Action = [
-          "acm:DescribeCertificate",
-          "acm:ListCertificates",
-          "acm:ListTagsForCertificate",
-          "cloudfront:GetDistribution",
-          "cloudfront:GetDistributionConfig",
-          "cloudfront:GetOriginAccessControl",
-          "cloudfront:GetOriginAccessControlConfig",
-          "cloudfront:ListDistributions",
-          "cloudfront:ListOriginAccessControls",
-          "cloudfront:ListTagsForResource",
-          "dynamodb:DescribeContinuousBackups",
-          "dynamodb:DescribeTable",
-          "dynamodb:DescribeTimeToLive",
-          "dynamodb:GetItem",
-          "dynamodb:ListTables",
-          "dynamodb:ListTagsOfResource",
-          "iam:GetOpenIDConnectProvider",
-          "iam:GetRole",
-          "iam:GetRolePolicy",
-          "iam:ListAttachedRolePolicies",
-          "iam:ListOpenIDConnectProviderTags",
-          "iam:ListOpenIDConnectProviders",
-          "iam:ListRolePolicies",
-          "iam:ListRoleTags",
-          "lambda:GetFunction",
-          "lambda:GetFunctionCodeSigningConfig",
-          "lambda:GetPolicy",
-          "lambda:ListTags",
-          "lambda:ListVersionsByFunction",
-          "route53:GetChange",
-          "route53:GetHostedZone",
-          "route53:ListHostedZones",
-          "route53:ListHostedZonesByName",
-          "route53:ListResourceRecordSets",
-          "route53:ListTagsForResource",
-          "apigateway:GET",
-        ]
-        Resource = "*"
+        Sid      = "ReadCertificate"
+        Effect   = "Allow"
+        Action   = ["acm:DescribeCertificate", "acm:ListTagsForCertificate"]
+        Resource = aws_acm_certificate.site.arn
+      },
+      {
+        Sid      = "ReadDistribution"
+        Effect   = "Allow"
+        Action   = ["cloudfront:GetDistribution", "cloudfront:GetDistributionConfig", "cloudfront:ListTagsForResource"]
+        Resource = aws_cloudfront_distribution.site.arn
+      },
+      {
+        Sid      = "ReadOriginControl"
+        Effect   = "Allow"
+        Action   = ["cloudfront:GetOriginAccessControl", "cloudfront:GetOriginAccessControlConfig"]
+        Resource = "arn:aws:cloudfront::481088928034:origin-access-control/${aws_cloudfront_origin_access_control.site.id}"
+      },
+      {
+        Sid      = "ReadResponseHeaders"
+        Effect   = "Allow"
+        Action   = ["cloudfront:GetResponseHeadersPolicy"]
+        Resource = "arn:aws:cloudfront::481088928034:response-headers-policy/*"
+      },
+      {
+        Sid      = "ReadCounterMetadata"
+        Effect   = "Allow"
+        Action   = ["dynamodb:DescribeContinuousBackups", "dynamodb:DescribeTable", "dynamodb:DescribeTimeToLive", "dynamodb:ListTagsOfResource"]
+        Resource = aws_dynamodb_table.visitor_counter.arn
+      },
+      {
+        Sid      = "ReadProjectRoles"
+        Effect   = "Allow"
+        Action   = ["iam:GetRole", "iam:GetRolePolicy", "iam:ListAttachedRolePolicies", "iam:ListRolePolicies", "iam:ListRoleTags"]
+        Resource = [aws_iam_role.lambda_role.arn, aws_iam_role.github_actions.arn, aws_iam_role.github_actions_plan.arn, aws_iam_role.github_actions_frontend.arn]
+      },
+      {
+        Sid      = "ReadOIDC"
+        Effect   = "Allow"
+        Action   = ["iam:GetOpenIDConnectProvider", "iam:ListOpenIDConnectProviderTags"]
+        Resource = aws_iam_openid_connect_provider.github.arn
+      },
+      {
+        Sid      = "ReadCounterFunction"
+        Effect   = "Allow"
+        Action   = ["lambda:GetFunction", "lambda:GetFunctionCodeSigningConfig", "lambda:GetPolicy", "lambda:ListTags", "lambda:ListVersionsByFunction", "lambda:GetFunctionConcurrency"]
+        Resource = aws_lambda_function.visitor_counter.arn
+      },
+      {
+        Sid      = "ReadZone"
+        Effect   = "Allow"
+        Action   = ["route53:GetHostedZone", "route53:ListResourceRecordSets", "route53:ListTagsForResource"]
+        Resource = aws_route53_zone.main.arn
+      },
+      {
+        Sid      = "ReadDNSChanges"
+        Effect   = "Allow"
+        Action   = ["route53:GetChange"]
+        Resource = "arn:aws:route53:::change/*"
+      },
+      {
+        Sid      = "ReadCounterAPI"
+        Effect   = "Allow"
+        Action   = ["apigateway:GET"]
+        Resource = ["arn:aws:apigateway:${var.aws_region}::/apis/${aws_apigatewayv2_api.counter_api.id}", "arn:aws:apigateway:${var.aws_region}::/apis/${aws_apigatewayv2_api.counter_api.id}/*"]
       },
       {
         Sid      = "ReadSiteBucketConfiguration"
@@ -156,133 +179,75 @@ resource "aws_iam_role_policy" "terraform_read" {
 resource "aws_iam_role_policy" "github_actions_terraform" {
   name = "cloud-resume-terraform-policy"
   role = aws_iam_role.github_actions.id
-
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
       {
         Sid      = "WriteState"
         Effect   = "Allow"
-        Action   = "s3:PutObject"
+        Action   = ["s3:PutObject"]
         Resource = "arn:aws:s3:::czresume-terraform-state/cloud-resume/terraform.tfstate"
       },
       {
-        Sid    = "SiteBucketAccess"
-        Effect = "Allow"
-        Action = [
-          "s3:GetBucketLocation", "s3:GetBucketPolicy",
-          "s3:GetBucketPublicAccessBlock", "s3:GetBucketVersioning",
-          "s3:GetBucketTagging", "s3:GetEncryptionConfiguration",
-          "s3:GetBucketWebsite", "s3:GetBucketCORS", "s3:GetBucketACL",
-          "s3:GetBucketLogging", "s3:GetBucketRequestPayment",
-          "s3:GetAccelerateConfiguration", "s3:GetBucketObjectLockConfiguration",
-          "s3:GetReplicationConfiguration", "s3:GetLifecycleConfiguration",
-          "s3:ListBucket",
-          "s3:GetObject", "s3:PutObject", "s3:DeleteObject"
-        ]
-        Resource = [aws_s3_bucket.site.arn, "${aws_s3_bucket.site.arn}/*"]
-      },
-      {
-        Sid    = "S3Manage"
-        Effect = "Allow"
-        Action = [
-          "s3:CreateBucket", "s3:DeleteBucket",
-          "s3:PutBucketPolicy", "s3:DeleteBucketPolicy",
-          "s3:PutBucketPublicAccessBlock", "s3:PutBucketVersioning",
-          "s3:PutBucketTagging", "s3:PutEncryptionConfiguration"
-        ]
-        Resource = [aws_s3_bucket.site.arn, "${aws_s3_bucket.site.arn}/*"]
-      },
-      {
-        Sid    = "Route53"
-        Effect = "Allow"
-        Action = [
-          "route53:CreateHostedZone", "route53:DeleteHostedZone",
-          "route53:GetHostedZone", "route53:ListHostedZones",
-          "route53:ListHostedZonesByName", "route53:ChangeResourceRecordSets",
-          "route53:GetChange", "route53:ListResourceRecordSets",
-          "route53:ListTagsForResource", "route53:ChangeTagsForResource"
-        ]
-        Resource = "*"
-      },
-      {
-        Sid    = "ACM"
-        Effect = "Allow"
-        Action = [
-          "acm:RequestCertificate", "acm:DeleteCertificate",
-          "acm:DescribeCertificate", "acm:ListCertificates",
-          "acm:ListTagsForCertificate", "acm:AddTagsToCertificate",
-          "acm:RemoveTagsFromCertificate"
-        ]
-        Resource = "*"
-      },
-      {
-        Sid    = "CloudFrontManage"
-        Effect = "Allow"
-        Action = [
-          "cloudfront:CreateDistribution", "cloudfront:UpdateDistribution",
-          "cloudfront:DeleteDistribution", "cloudfront:GetDistribution",
-          "cloudfront:GetDistributionConfig", "cloudfront:ListDistributions",
-          "cloudfront:CreateOriginAccessControl", "cloudfront:UpdateOriginAccessControl",
-          "cloudfront:DeleteOriginAccessControl", "cloudfront:GetOriginAccessControl",
-          "cloudfront:GetOriginAccessControlConfig", "cloudfront:ListOriginAccessControls",
-          "cloudfront:ListTagsForResource", "cloudfront:TagResource",
-          "cloudfront:UntagResource"
-        ]
-        Resource = "*"
-      },
-      {
-        Sid      = "DynamoDBList"
+        Sid      = "ManageSiteBucket"
         Effect   = "Allow"
-        Action   = ["dynamodb:ListTables"]
-        Resource = "*"
+        Action   = ["s3:CreateBucket", "s3:DeleteBucket", "s3:PutBucketPolicy", "s3:DeleteBucketPolicy", "s3:PutBucketPublicAccessBlock", "s3:PutBucketVersioning", "s3:PutBucketTagging", "s3:PutEncryptionConfiguration"]
+        Resource = aws_s3_bucket.site.arn
       },
       {
-        Sid    = "DynamoDB"
-        Effect = "Allow"
-        Action = [
-          "dynamodb:CreateTable", "dynamodb:DeleteTable",
-          "dynamodb:DescribeTable", "dynamodb:UpdateTable",
-          "dynamodb:ListTagsOfResource", "dynamodb:TagResource",
-          "dynamodb:UntagResource", "dynamodb:GetItem", "dynamodb:PutItem",
-          "dynamodb:UpdateItem", "dynamodb:DeleteItem",
-          "dynamodb:DescribeContinuousBackups", "dynamodb:DescribeTimeToLive"
-        ]
-        Resource = [
-          "arn:aws:dynamodb:us-east-1:481088928034:table/cloud-resume-*",
-          "arn:aws:dynamodb:us-east-1:481088928034:table/czresume-*"
-        ]
-      },
-      {
-        Sid    = "Lambda"
-        Effect = "Allow"
-        Action = [
-          "lambda:CreateFunction", "lambda:DeleteFunction",
-          "lambda:GetFunction", "lambda:UpdateFunctionCode",
-          "lambda:UpdateFunctionConfiguration", "lambda:AddPermission",
-          "lambda:RemovePermission", "lambda:GetPolicy",
-          "lambda:ListTags", "lambda:TagResource", "lambda:UntagResource",
-          "lambda:GetFunctionCodeSigningConfig", "lambda:ListVersionsByFunction"
-        ]
-        Resource = "arn:aws:lambda:us-east-1:481088928034:function:cloud-resume-*"
-      },
-      {
-        Sid    = "APIGateway"
-        Effect = "Allow"
-        Action = [
-          "apigateway:GET", "apigateway:POST",
-          "apigateway:PUT", "apigateway:DELETE", "apigateway:PATCH"
-        ]
-        Resource = "*"
-      },
-      {
-        Sid      = "PassLambdaExecutionRole"
+        Sid      = "ManageZone"
         Effect   = "Allow"
-        Action   = "iam:PassRole"
-        Resource = aws_iam_role.lambda_role.arn
-        Condition = {
-          StringEquals = { "iam:PassedToService" = "lambda.amazonaws.com" }
-        }
+        Action   = ["route53:DeleteHostedZone", "route53:ChangeResourceRecordSets", "route53:ChangeTagsForResource"]
+        Resource = aws_route53_zone.main.arn
+      },
+      {
+        Sid      = "ManageCertificate"
+        Effect   = "Allow"
+        Action   = ["acm:DeleteCertificate", "acm:AddTagsToCertificate", "acm:RemoveTagsFromCertificate"]
+        Resource = aws_acm_certificate.site.arn
+      },
+      {
+        Sid      = "ManageDistribution"
+        Effect   = "Allow"
+        Action   = ["cloudfront:UpdateDistribution", "cloudfront:DeleteDistribution", "cloudfront:TagResource", "cloudfront:UntagResource"]
+        Resource = aws_cloudfront_distribution.site.arn
+      },
+      {
+        Sid      = "ManageOriginControl"
+        Effect   = "Allow"
+        Action   = ["cloudfront:UpdateOriginAccessControl", "cloudfront:DeleteOriginAccessControl"]
+        Resource = "arn:aws:cloudfront::481088928034:origin-access-control/${aws_cloudfront_origin_access_control.site.id}"
+      },
+      {
+        Sid      = "ManageResponseHeaders"
+        Effect   = "Allow"
+        Action   = ["cloudfront:CreateResponseHeadersPolicy", "cloudfront:UpdateResponseHeadersPolicy", "cloudfront:DeleteResponseHeadersPolicy"]
+        Resource = "arn:aws:cloudfront::481088928034:response-headers-policy/*"
+      },
+      {
+        Sid      = "ManageCounterTable"
+        Effect   = "Allow"
+        Action   = ["dynamodb:CreateTable", "dynamodb:DeleteTable", "dynamodb:UpdateTable", "dynamodb:TagResource", "dynamodb:UntagResource"]
+        Resource = aws_dynamodb_table.visitor_counter.arn
+      },
+      {
+        Sid      = "ManageCounterFunction"
+        Effect   = "Allow"
+        Action   = ["lambda:CreateFunction", "lambda:DeleteFunction", "lambda:UpdateFunctionCode", "lambda:UpdateFunctionConfiguration", "lambda:AddPermission", "lambda:RemovePermission", "lambda:TagResource", "lambda:UntagResource", "lambda:PutFunctionConcurrency", "lambda:DeleteFunctionConcurrency"]
+        Resource = aws_lambda_function.visitor_counter.arn
+      },
+      {
+        Sid      = "ManageCounterAPI"
+        Effect   = "Allow"
+        Action   = ["apigateway:POST", "apigateway:PUT", "apigateway:DELETE", "apigateway:PATCH"]
+        Resource = ["arn:aws:apigateway:${var.aws_region}::/apis/${aws_apigatewayv2_api.counter_api.id}", "arn:aws:apigateway:${var.aws_region}::/apis/${aws_apigatewayv2_api.counter_api.id}/*"]
+      },
+      {
+        Sid       = "PassLambdaExecutionRole"
+        Effect    = "Allow"
+        Action    = "iam:PassRole"
+        Resource  = aws_iam_role.lambda_role.arn
+        Condition = { StringEquals = { "iam:PassedToService" = "lambda.amazonaws.com" } }
       }
     ]
   })

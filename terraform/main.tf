@@ -207,9 +207,10 @@ resource "aws_cloudfront_distribution" "site" {
   # default_cache_behavior controls how CloudFront handles
   # requests that don't match any specific path patterns
   default_cache_behavior {
-    allowed_methods  = ["GET", "HEAD"]         # static site only needs read methods
-    cached_methods   = ["GET", "HEAD"]         # cache responses for these methods
-    target_origin_id = "s3-${var.bucket_name}" # which origin to fetch from
+    response_headers_policy_id = aws_cloudfront_response_headers_policy.security.id
+    allowed_methods            = ["GET", "HEAD"]         # static site only needs read methods
+    cached_methods             = ["GET", "HEAD"]         # cache responses for these methods
+    target_origin_id           = "s3-${var.bucket_name}" # which origin to fetch from
 
     # forwarded_values controls what CloudFront passes through
     # to the origin. For a static site, we don't need query

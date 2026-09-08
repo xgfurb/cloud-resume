@@ -93,3 +93,48 @@ provider lockfile; update it deliberately with `terraform init -upgrade`, then
 review the resulting changes and rerun validation. Mock tests check policy contents,
 not AWS's effective authorization or GitHub environment settings; verify those
 through the first deployment after migration.
+
+## Security hardening follow-up
+
+The required PR gate is `checks`. It waits for reusable Terraform, frontend,
+backend, and security workflows; a failed or cancelled job blocks merging.
+All PRs run application/security checks, while Terraform still skips live
+operations when no relevant infrastructure files changed. Weekly security scans
+and Dependabot updates supplement secret scanning and push protection.
+
+The Terraform plan role no longer has application-data reads or account-wide
+read access. Infrastructure mutations target the existing project resources.
+Creating a new hosted zone, certificate, distribution, or API is an administrative
+operation; the CI role is intended to maintain this existing deployment.
+
+CloudFront applies the policy in `terraform/security-headers.json`, including
+CSP, HSTS, framing protection, MIME sniffing protection, and a referrer policy.
+The counter API hostname in CSP must be updated if the API is replaced. Browser
+tests use these same headers. Frontend JavaScript is in local files so CSP can
+block inline script execution. Deploy that frontend before approving the first
+headers rollout, then verify the live response headers and page behavior.
+
+API Gateway permits a sustained one request per second with a burst of five.
+Lambda reserves two concurrent executions. These controls limit execution rate;
+they do not authenticate visitors or create a hard dollar spending limit.
+
+### Final developer-policy restriction (administrator required)
+
+`terraform/bootstrap/dev-policy.json` is the reviewed read-only developer policy,
+with only Terraform lockfile writes. The bootstrap resource reads this file so
+future bootstrap applies preserve the restriction. Its existing AWS policy name
+and description remain unchanged to avoid replacing the managed policy.
+
+The current dev identity cannot update its own managed policy. Use the account's
+administrator session in AWS CloudShell; no new root access keys are needed.
+Review the policy and run:
+
+```bash
+bash scripts/restrict-dev-access.sh terraform/bootstrap/dev-policy.json
+```
+
+The script checks the account and existing user policies/groups, stops on
+unexpected grants, sets a new managed policy version, and retains the old version
+for administrative rollback. Do this after the CI migration is verified. Future
+IAM/bootstrap changes must use the administrator session. The developer identity
+will no longer be able to publish files, mutate infrastructure, or edit IAM roles.

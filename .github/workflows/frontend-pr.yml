@@ -1,13 +1,7 @@
 name: Frontend PR Checks
 
 on:
-  pull_request:
-    paths:
-      - 'frontend/**'
-      - 'tests/**'
-      - 'package*.json'
-      - '.htmlhintrc'
-      - '.github/workflows/frontend-pr.yml'
+  workflow_call:
 
 permissions:
   contents: read

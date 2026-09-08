@@ -42,14 +42,14 @@ CloudFront serves the resume files. JavaScript calls the API separately, and Lam
 
 ## Delivery workflow
 
-Changes land through pull requests. The main-branch ruleset requires a PR and the `plan` status check. The plan job runs on every PR, but skips Terraform operations when no relevant files changed, so documentation-only PRs can still satisfy the required check.
+Changes land through pull requests. The main-branch ruleset requires a PR and the aggregate `checks` status check. The plan job runs on every PR, but skips Terraform operations when no relevant files changed, while the aggregate gate still requires application and security checks.
 
 | Change | PR checks | After merge to `main` |
 |---|---|---|
 | Frontend | HTMLHint and desktop/mobile browser tests | S3 sync and CloudFront invalidation |
 | Backend | Backend tests and Terraform checks/plan | Production approval, backend tests, Terraform plan/apply |
 | Infrastructure, excluding bootstrap | Formatting, validation, policy tests, and plan | Production approval, backend tests, Terraform plan/apply |
-| README/documentation only | Required plan job skips infrastructure work | No application deployment |
+| README/documentation only | Application/security checks; Terraform skips infrastructure work | No application deployment |
 
 Test dependencies and relevant workflow-file changes also trigger checks. Exact path filters are defined in [.github/workflows](.github/workflows).
 
@@ -69,18 +69,20 @@ GitHub Actions uses OIDC to obtain temporary AWS credentials instead of storing 
 | `cloud-resume-github-frontend` | Repository `main` branch | Site bucket sync and CloudFront invalidation |
 | `cloud-resume-github-actions` | Repository `production` environment | Infrastructure deployment; no IAM mutation |
 
-CI cannot change role policies or the OIDC provider. The apply role can pass only the existing Lambda execution role to Lambda. IAM changes remain in Terraform, but must be applied with a suitably authorized administrative identity.
+CI cannot change role policies or the OIDC provider. PR planning reads are scoped to project resources and exclude counter data reads. The apply role can pass only the existing Lambda execution role to Lambda. IAM changes remain in Terraform, but must be applied with a suitably authorized administrative identity.
 
 Other controls include:
 
 - S3 public access blocking and CloudFront Origin Access Control.
 - HTTPS redirection and an ACM certificate on CloudFront.
-- API CORS restricted to the resume domains and request throttling. The counter remains a public endpoint; CORS is not authentication.
+- API CORS restricted to the resume domains, one request/second throttling (burst five), and two concurrent Lambda executions. The counter remains a public endpoint; CORS is not authentication.
 - Versioned, encrypted, non-public Terraform state with a separate S3 lockfile.
 - Production deployments restricted to `main`, with the sole administrator as reviewer, self-approval allowed, and administrator bypass disabled.
+- CloudFront CSP, HSTS, framing and MIME-sniffing protection, plus a referrer policy.
+- Required aggregate CI checks, weekly secret/dependency scans, and Dependabot updates.
 - Commit-pinned GitHub Actions, pinned Python test dependencies, and committed npm/Terraform lockfiles.
 
-The plan role can read state, which can contain sensitive information. Some infrastructure control-plane permissions remain service-wide. The policy tests check declared permissions; they do not replace verification of effective AWS authorization.
+The plan role can read state, which can contain sensitive information. Some resource identifiers use account-scoped wildcards for DNS change records and CloudFront response-header policies. The policy tests check declared permissions; they do not replace verification of effective AWS authorization.
 
 ## Local development
 

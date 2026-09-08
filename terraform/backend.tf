@@ -171,12 +171,13 @@ data "archive_file" "lambda_zip" {
 }
 
 resource "aws_lambda_function" "visitor_counter" {
-  filename      = data.archive_file.lambda_zip.output_path
-  function_name = "cloud-resume-counter"
-  role          = aws_iam_role.lambda_role.arn
-  handler       = "lambda_function.handler"
-  runtime       = "python3.12"
-  timeout       = 10 # seconds — default is 3, which can be tight
+  filename                       = data.archive_file.lambda_zip.output_path
+  function_name                  = "cloud-resume-counter"
+  role                           = aws_iam_role.lambda_role.arn
+  handler                        = "lambda_function.handler"
+  runtime                        = "python3.12"
+  reserved_concurrent_executions = 2
+  timeout                        = 10 # seconds — default is 3, which can be tight
 
   # source_code_hash tells Terraform to redeploy the function
   # whenever the code changes. Without it, Terraform wouldn't
@@ -222,7 +223,7 @@ resource "aws_apigatewayv2_api" "counter_api" {
       "https://${var.domain_name}",
       "https://www.${var.domain_name}"
     ]
-    allow_methods = ["GET", "POST"]
+    allow_methods = ["GET"]
     allow_headers = ["content-type"]
     max_age       = 3600 # browser caches CORS preflight for 1 hour
   }
@@ -266,8 +267,8 @@ resource "aws_apigatewayv2_stage" "default" {
   # Throttling prevents abuse — limits how many requests
   # per second your API will accept.
   default_route_settings {
-    throttling_burst_limit = 10 # max concurrent requests
-    throttling_rate_limit  = 5  # sustained requests per second
+    throttling_burst_limit = 5 # token-bucket burst allowance
+    throttling_rate_limit  = 1 # sustained requests per second
   }
 
   tags = {

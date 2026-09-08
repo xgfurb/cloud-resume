@@ -1,0 +1,35 @@
+name: Pull Request Checks
+on:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  plan:
+    permissions:
+      contents: read
+      id-token: write
+      pull-requests: write
+    uses: ./.github/workflows/terraform-plan.yml
+  frontend:
+    uses: ./.github/workflows/frontend-pr.yml
+  backend:
+    uses: ./.github/workflows/backend-pr.yml
+  security:
+    uses: ./.github/workflows/security.yml
+  checks:
+    name: checks
+    if: always()
+    needs: [plan, frontend, backend, security]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require all checks to succeed
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+        run: |
+          python - <<'PYTHON'
+          import json, os
+          results = json.loads(os.environ["RESULTS"])
+          failed = [name for name, job in results.items() if job["result"] != "success"]
+          if failed:
+              raise SystemExit("Required checks did not succeed: " + ", ".join(failed))
+          PYTHON

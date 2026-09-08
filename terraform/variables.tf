@@ -34,3 +34,15 @@ variable "bucket_name" {
   type        = string
   default     = "czresume.com"
 }
+
+# This account cannot reserve capacity while retaining AWS's minimum unreserved pool.
+# Set to 2 after an administrator obtains sufficient regional concurrency quota.
+variable "counter_reserved_concurrency" {
+  description = "Counter reservation: -1 uses the account pool; 2 enables the intended cap after a quota increase."
+  type        = number
+  default     = -1
+  validation {
+    condition     = contains([-1, 2], var.counter_reserved_concurrency)
+    error_message = "Use -1 until the account quota permits the intended reservation of 2."
+  }
+}

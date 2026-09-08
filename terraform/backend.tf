@@ -180,7 +180,7 @@ resource "aws_lambda_function" "visitor_counter" {
   role                           = aws_iam_role.lambda_role.arn
   handler                        = "lambda_function.handler"
   runtime                        = "python3.12"
-  reserved_concurrent_executions = 2
+  reserved_concurrent_executions = var.counter_reserved_concurrency
   timeout                        = 10 # seconds — default is 3, which can be tight
 
   # source_code_hash tells Terraform to redeploy the function

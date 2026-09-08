@@ -46,7 +46,7 @@ for (const width of [1280, 375]) {
       assert.equal(await page.locator('.header-contact').evaluate(el => getComputedStyle(el).textAlign), width < 600 ? 'left' : 'right');
       assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'Page must not overflow horizontally');
       const fontUrl = new URL(await page.locator('link[href*="fonts.googleapis.com/css2"]').getAttribute('href'));
-      assert.deepEqual(fontUrl.searchParams.getAll('family'), ['Syne:wght@400;600;700;800', 'JetBrains Mono:wght@300;400;500']);
+      assert.deepEqual(fontUrl.searchParams.getAll('family'), ['IBM Plex Sans:wght@400;500;600;700', 'JetBrains Mono:wght@300;400;500']);
       await page.route('**/count', route => route.fulfill({ status: 500, contentType: 'application/json', body: '{"error":"unavailable"}' }));
       await page.reload();
       await page.evaluate(() => fetchVisitorCount());

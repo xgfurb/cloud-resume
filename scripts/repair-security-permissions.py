@@ -58,9 +58,16 @@ if len(matches) != 1:
 matches[0]['Resource'] = f'arn:aws:logs:us-east-1:{ACCOUNT}:log-group:/aws/lambda/cloud-resume-counter:*'
 changes.append((role, name, policy))
 print(f'Original policies saved in {backup}')
-# This existing script checks user attachments/groups and retains the previous version.
-subprocess.run(['bash', str(ROOT / 'scripts/restrict-dev-access.sh'),
-                str(ROOT / 'terraform/bootstrap/dev-policy.json')], check=True)
+# Avoid consuming another version if a previous attempt completed this step.
+arn = f'arn:aws:iam::{ACCOUNT}:policy/cloud-resume-dev-policy'
+version = aws('iam', 'get-policy', '--policy-arn', arn)['Policy']['DefaultVersionId']
+current = aws('iam', 'get-policy-version', '--policy-arn', arn, '--version-id', version)['PolicyVersion']['Document']
+desired = json.loads((ROOT / 'terraform/bootstrap/dev-policy.json').read_text())
+if current != desired:
+    subprocess.run(['bash', str(ROOT / 'scripts/restrict-dev-access.sh'),
+                    str(ROOT / 'terraform/bootstrap/dev-policy.json')], check=True)
+else:
+    print('Developer policy already matches the reviewed policy.')
 for role, name, policy in changes:
     aws('iam', 'put-role-policy', '--role-name', role, '--policy-name', name,
         '--policy-document', json.dumps(policy))

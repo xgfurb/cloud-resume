@@ -23,7 +23,7 @@ terraform {
     }
     aws = {
       source  = "hashicorp/aws" # official AWS provider
-      version = "~> 5.0"        # any 5.x version — the ~> means
+      version = "~> 6.63"        # any 5.x version — the ~> means
       # "compatible with 5.0, up to but
       # not including 6.0"
     }

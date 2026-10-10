@@ -1,8 +1,14 @@
 # Cloud Resume Challenge
 
-A serverless resume website for Chris Zuck, built for the [Cloud Resume Challenge](https://cloudresumechallenge.dev). The project combines a static frontend, a Python visitor-counter API, Terraform infrastructure, and GitHub Actions deployment workflows with separate AWS roles.
+A completed learning project by Chris Zuck, built for the [Cloud Resume Challenge](https://cloudresumechallenge.dev) to learn AWS services, infrastructure as code (IaC), and deploying a static website to host a resume. The project combined a static frontend, a Python visitor-counter API, Terraform infrastructure, and GitHub Actions deployment workflows with separate AWS roles.
 
-**[View the live resume](https://czresume.com/)** · **[Deployment guide](docs/deployment.md)** · **[GitHub Actions](https://github.com/xgfurb/cloud-resume/actions)**
+## Project retired — October 2026
+
+The AWS infrastructure has been dismantled and the AWS account closed. This repository is archived as a record of the implementation and lessons learned; it is no longer maintained or deployed. The resume frontend continues in the separate [resume-site repository](https://github.com/xgfurb/resume-site).
+
+The architecture, deployment instructions, and service configuration below describe the former AWS implementation. Its counter API, remote Terraform state, and AWS deployment roles are no longer available.
+
+**[Resume site repository](https://github.com/xgfurb/resume-site)** · **[Historical deployment guide](docs/deployment.md)** · **[GitHub Actions history](https://github.com/xgfurb/cloud-resume/actions)**
 
 ## What this project demonstrates
 
@@ -124,7 +130,7 @@ To preview the actual page locally:
 python -m http.server 8000 --bind 127.0.0.1 --directory frontend
 ```
 
-Open [localhost:8000](http://localhost:8000). The page currently points to the live counter API. Localhost is outside its allowed CORS origins, so the badge may show a dash even though the request can increment the counter. Use the browser tests for isolated counter testing.
+Open [localhost:8000](http://localhost:8000). The archived frontend still references the former counter API, which is no longer available, so the badge may show a dash. Use the browser tests for isolated counter testing, or use `resume-site` for the frontend without the AWS counter.
 
 ### Terraform validation
 
@@ -182,4 +188,4 @@ This configuration includes project-specific domain names, state storage, accoun
 
 ## Project context
 
-Built as a practical Cloud Resume Challenge project, with development assistance from Claude Code and OpenAI Codex. The live resume credits AWS, Terraform, GitHub Actions, and both development tools.
+Built as a practical Cloud Resume Challenge project to explore AWS services, Terraform infrastructure as code, and automated static website deployment, with development assistance from Claude Code and OpenAI Codex. Preserved as a completed learning project after retiring its AWS infrastructure.
